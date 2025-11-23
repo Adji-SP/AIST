@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "./static/css/main.73c36dc0.css",
+    "main.js": "./static/js/main.eca0c9c1.js",
+    "static/media/ITS.png": "./static/media/ITS.68796e2d5bb2cb70e64e.png",
+    "static/media/limaunipis.png": "./static/media/limaunipis.ed0187bf5ea5e9680634.png",
+    "static/media/image.png": "./static/media/image.8570e52cafab36af64d0.png",
+    "static/media/sawah.jpg": "./static/media/sawah.3158ac4eaeacdf7cbca2.jpg",
+    "index.html": "./index.html",
+    "main.73c36dc0.css.map": "./static/css/main.73c36dc0.css.map",
+    "main.eca0c9c1.js.map": "./static/js/main.eca0c9c1.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.73c36dc0.css",
+    "static/js/main.eca0c9c1.js"
+  ]
+}

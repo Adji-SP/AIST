@@ -18,9 +18,10 @@ import image_url from '../images/limaunipis.png';
 // Import the LandPlotsMap component from its separate file
 import LandPlotsMap from '../ui/LandPlotMaps';
 
-// Import hook API kustom dan Firestore hooks
-import { useApi, useSensorData, useSerialConnection } from '../../hook/useApi';
-import { useFirestore } from '../../hook/useFirestore';
+// Import custom hooks
+import { useApi, useSerialConnection } from '../../hook/useApiClean';
+import { useFirestore } from '../../hook/useFirestoreClean';
+import { useWebSocketStatus } from '../../hook/useRealtimeClean';
 
 // [NEW FUNCTION] To get weather icon and description based on WMO code
 const getWeatherInfo = (code) => {
@@ -149,18 +150,21 @@ const WeatherWidget = ({ data, loading, onMoreDetailsClick }) => {
 const NipisOverview = () => {
 
     // API and connection hooks
-    const { isConnected, wsConnected, error, loading, getDataByFilters } = useApi();
-    const { status: serialStatus, reconnect: serialReconnect, } = useSerialConnection();
+    const { getDataByFilters, error, loading } = useApi();
+    const { connected: wsConnected } = useWebSocketStatus();
+    const { status: serialStatus, reconnect: serialReconnect } = useSerialConnection();
+    const isConnected = !loading && !error;
 
     // Firestore real-time data hooks - Using new collections with sample_id filtering
     const sampleId = 'nipis_orchard';
     
-    // Dataset collection - CSV input format data
-    const datasetParamData = useFirestore('dataset_param', {
-        where: { field: 'sample_id', operator: '==', value: sampleId },
-        orderBy: { field: 'timestamp', direction: 'desc' },
-        limit: 20
-    });
+    // Dataset collection - CSV input format data (optional, for CSV data display)
+    // Commented out if not being used to reduce unnecessary subscriptions
+    // const datasetParamData = useFirestore('dataset_param', {
+    //     where: { field: 'sample_id', operator: '==', value: sampleId },
+    //     orderBy: { field: 'timestamp', direction: 'desc' },
+    //     limit: 20
+    // });
 
     // Sensors collection - 4 main sensor readings
     const sensorsData = useFirestore('sensors', {
@@ -188,7 +192,9 @@ const NipisOverview = () => {
         console.log('🔄 Firestore data updates automatically via real-time listeners');
     };
     const lastUpdated = sensorData[0]?.timestamp || new Date().toISOString();
-    const [alerts, setAlerts] = useState([]);
+
+    // Use Firestore alerts directly instead of API
+    const [alerts, setAlerts] = useState(alertsData.data || []);
     const [devices, setDevices] = useState([]);
     const [plantData, setPlantData] = useState(null);
     const [productionData, setProductionData] = useState(null);

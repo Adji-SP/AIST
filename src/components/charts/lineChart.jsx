@@ -24,12 +24,12 @@ ChartJS.register(
     Filler
 );
 
-export default function LineChart({ 
-    data, 
-    options = {}, 
+export default function LineChart({
+    data,
+    options = {},
     colors = {},
     className = '',
-    height = 400 
+    height = 400
 }) {
     const canvasRef = useRef(null);
     const chartRef = useRef(null);
@@ -40,8 +40,8 @@ export default function LineChart({
         primary: '#3b82f6',
         secondary: '#f97316',
         text: '#6b7280', // Sebelumnya '#ffffff' (putih)
-        border: document.documentElement?.getAttribute('data-theme') === 'dark' 
-            ? 'rgba(255, 255, 255, 0.1)' 
+        border: document.documentElement?.getAttribute('data-theme') === 'dark'
+            ? 'rgba(255, 255, 255, 0.1)'
             : 'rgba(229, 231, 235, 1)' // Menggunakan warna abu-abu yang lebih jelas
     };
 
@@ -75,14 +75,14 @@ export default function LineChart({
     const defaultOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { 
-            legend: { 
+        plugins: {
+            legend: {
                 display: true, // Menampilkan legenda agar tahu garis mana milik data apa
                 position: 'top',
                 labels: {
                     color: finalColors.text
                 }
-             } 
+            }
         },
         layout: {
             padding: {
@@ -93,13 +93,13 @@ export default function LineChart({
             }
         },
         scales: {
-            x: { 
-                grid: { drawOnChartArea: false }, 
-                ticks: { color: finalColors.text, font: { size: 12, weight: '500' } } 
+            x: {
+                grid: { drawOnChartArea: false },
+                ticks: { color: finalColors.text, font: { size: 12, weight: '500' } }
             },
-            y: { 
-                grid: { color: finalColors.border, lineWidth: 1 }, 
-                ticks: { color: finalColors.text, font: { size: 12, weight: '500' } }, 
+            y: {
+                grid: { color: finalColors.border, lineWidth: 1 },
+                ticks: { color: finalColors.text, font: { size: 12, weight: '500' } },
                 // Kita akan hapus min & max agar skala bisa otomatis menyesuaikan data
                 // min: 0, 
                 // max: 100 

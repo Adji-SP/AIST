@@ -1,19 +1,18 @@
 // =================================================================================
 // IMPORTS
 // =================================================================================
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import Papa from 'papaparse'; // Pastikan Anda sudah menginstal: npm install papaparse
+import React, { useState, useMemo, useEffect } from 'react';
+import Papa from 'papaparse';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, RadialLinearScale, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line, Radar, Bar } from 'react-chartjs-2';
-import { Leaf, Thermometer, Droplet, Wind, Sun, Activity, BarChart3, SlidersHorizontal, UploadCloud, FileText, X, LoaderCircle, CheckCircle, TrendingDown, TrendingUp, DollarSign, AlertTriangle, Package, FlaskConical } from 'lucide-react';
+import { Leaf, Thermometer, Droplet, Wind, Sun, Activity, SlidersHorizontal, UploadCloud, FileText, X, LoaderCircle, CheckCircle, TrendingDown, TrendingUp, DollarSign, AlertTriangle, Package, FlaskConical } from 'lucide-react';
 
-// Komponen Aplikasi & Hook Kustom
+// Components & Custom Hooks
 import Header from '../layout/header';
 import Sidebar from '../layout/sidebar';
-import keylimeBackground from '../images/image.png'; // Pastikan path gambar ini benar
-import { useApi } from '../../hook/useApi'; // Pastikan path hook ini benar
-import { useRealtimeSensorData, useRealtimeFinancialData } from '../../hook/useRealtimeData'; // Pastikan path hook ini benar
-import { useFirestoreSensorData, useFirestoreFinancialData, useFirestoreDashboardData, useFirestoreMutations } from '../../hook/useFirestore';
+import keylimeBackground from '../images/image.png';
+import { useApi } from '../../hook/useApiClean';
+import { useSensorData as useFirestoreSensorData, useFinancialData as useFirestoreFinancialData, useFirestoreMutations } from '../../hook/useFirestoreClean';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, RadialLinearScale, Title, Tooltip, Legend, Filler);
 
@@ -162,17 +161,13 @@ const DataPage = () => {
     // Use Firestore hooks for real-time data
     const firestoreSensorData = useFirestoreSensorData(siteId, 30);
     const firestoreFinancialData = useFirestoreFinancialData(siteId, 10);
-    
-    // Legacy fallback support
-    const sensorConnected = !firestoreSensorData.loading;
 
     // Firestore data state
     const [loading, setLoading] = useState(false);
     const [fallbackSensorData, setFallbackSensorData] = useState(null);
-    
+
     // CSV upload state
     const [uploading, setUploading] = useState(false);
-    const [apiLoading, setApiLoading] = useState(false);
     const [csvData, setCsvData] = useState(() => {
         // Initialize CSV data from localStorage if available
         try {

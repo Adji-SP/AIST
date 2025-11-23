@@ -18,9 +18,10 @@ import image_url from '../images/limaunipis.png';
 // Import the LandPlotsMap component from its separate file
 import LandPlotsMap from '../ui/LandPlotMaps';
 
-// Import hook API kustom dan Firestore hooks
-import { useApi, useSensorData, useSerialConnection } from '../../hook/useApi';
-import { useFirestore } from '../../hook/useFirestore';
+// Import custom hooks
+import { useApi, useSerialConnection } from '../../hook/useApiClean';
+import { useFirestore } from '../../hook/useFirestoreClean';
+import { useWebSocketStatus } from '../../hook/useRealtimeClean';
 
 // [NEW FUNCTION] To get weather icon and description based on WMO code
 const getWeatherInfo = (code) => {
@@ -148,38 +149,19 @@ const WeatherWidget = ({ data, loading, onMoreDetailsClick }) => {
 // Main Page Component
 const KasturiOverview = () => {
     // API and connection hooks
-    const { isConnected, wsConnected, error, loading, getDataByFilters } = useApi();
-    const { status: serialStatus, reconnect: serialReconnect, } = useSerialConnection();
+    const { getDataByFilters, error, loading } = useApi();
+    const { connected: wsConnected } = useWebSocketStatus();
+    const { status: serialStatus, reconnect: serialReconnect } = useSerialConnection();
+    const isConnected = !loading && !error;
 
     // Firestore real-time data hooks - Using new collections with sample_id filtering
     const sampleId = 'kasturi_orchard';
-    
-    // Dataset collection - CSV input format data
-    const datasetParamData = useFirestore('dataset_param', {
-        where: { field: 'sample_id', operator: '==', value: sampleId },
-        orderBy: { field: 'timestamp', direction: 'desc' },
-        limit: 20
-    });
 
-    // Sensors collection - 4 main sensor readings
+    // Sensors collection - 4 main sensor readings (primary data source)
     const sensorsData = useFirestore('sensors', {
         where: { field: 'sample_id', operator: '==', value: sampleId },
         orderBy: { field: 'timestamp', direction: 'desc' },
         limit: 30
-    });
-
-    // Actions collection - action logs
-    const actionsData = useFirestore('actions', {
-        where: { field: 'sample_id', operator: '==', value: sampleId },
-        orderBy: { field: 'timestamp', direction: 'desc' },
-        limit: 15
-    });
-
-    // History collection - combined data
-    const historyData = useFirestore('history', {
-        where: { field: 'sample_id', operator: '==', value: sampleId },
-        orderBy: { field: 'timestamp', direction: 'desc' },
-        limit: 25
     });
 
     // Alerts collection - system alerts
@@ -189,12 +171,11 @@ const KasturiOverview = () => {
         limit: 10
     });
 
-    // Forecast collection - predictions
-    const forecastData = useFirestore('forecast', {
-        where: { field: 'sample_id', operator: '==', value: sampleId },
-        orderBy: { field: 'timestamp', direction: 'desc' },
-        limit: 7
-    });
+    // Optional: Uncomment if needed for specific features
+    // const datasetParamData = useFirestore('dataset_param', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 20 });
+    // const actionsData = useFirestore('actions', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 15 });
+    // const historyData = useFirestore('history', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 25 });
+    // const forecastData = useFirestore('forecast', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 7 });
 
     // Use the new collections data
     const sensorData = sensorsData.data?.length > 0 ? sensorsData.data : [];

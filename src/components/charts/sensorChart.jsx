@@ -1,6 +1,6 @@
 // components/charts/SensorChart.jsx
 import React, { useState } from 'react';
-import LineChart from '../charts/lineChart'; // Adjust path as needed
+import LineChart from './lineChart'; // Adjust path as needed
 
 const SensorChart = ({ 
   data,

@@ -3,12 +3,12 @@ require('dotenv').config();
 const { app } = require('electron');
 
 // Import modular components
-const DatabaseManager = require('./modules/database/databaseManager');
-const WindowManager = require('./modules/window/windowManager');
-const APIServer = require('./modules/api/apiServer');
-const SerialManager = require('./modules/serial/serialManager');
-const IPCManager = require('./modules/ipc/ipcManager');
-const WebsocketManager = require('./modules/websocket/websocketManager');
+const DatabaseManager = require('./App/modules/config/database/databaseManager');
+const WindowManager = require('./App/modules/config/window/windowManager');
+const APIServer = require('./App/modules/config/api/apiServer');
+const SerialManager = require('./App/modules/config/serial/serialManager');
+const IPCManager = require('./App/modules/config/ipc/ipcManager');
+const WebsocketManager = require('./App/modules/config/websocket/websocketManager');
 
 class Application {
     constructor() {

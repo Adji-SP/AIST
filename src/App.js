@@ -7,7 +7,7 @@ import FinanceAnalytics from './components/dashboard/Finance';
 import Articles from './components/dashboard/Forecast';
 import Maintenance from './components/dashboard/Maintenance';
 import TeamProfile from './components/dashboard/TeamProfile';
-import { useFirestore } from './hook/useFirestore';
+import { useFirestore } from './hook/useFirestoreClean';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
