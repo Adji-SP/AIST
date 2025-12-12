@@ -67,48 +67,47 @@ class ErrorBoundary extends React.Component {
 
 // Component to determine which overview to show based on sample_id
 const DynamicOverview = () => {
-  const [overviewComponent, setOverviewComponent] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
   // Get latest sensor data to determine sample_id
   const sensorsData = useFirestore('sensors', {
     orderBy: { field: 'timestamp', direction: 'desc' },
     limit: 1
   });
-  
+
+  // Determine which component to show based on cached or loaded data
+  const determineComponent = () => {
+    if (sensorsData.data && sensorsData.data.length > 0) {
+      const latestSample = sensorsData.data[0];
+      const sampleId = latestSample.sample_id || '';
+      return sampleId.toLowerCase().includes('nipis') ? <NipisOverview /> : <KasturiOverview />;
+    }
+    return <NipisOverview />; // Default
+  };
+
+  const [overviewComponent, setOverviewComponent] = useState(determineComponent);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     console.log('🔍 DynamicOverview: sensorsData state:', {
       loading: sensorsData.loading,
       error: sensorsData.error,
       dataLength: sensorsData.data?.length || 0,
-      data: sensorsData.data?.[0]
+      data: sensorsData.data?.[0],
+      hasCache: sensorsData.data?.length > 0 && !sensorsData.loading
     });
-
-    // Set timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.log('⚠️ DynamicOverview: Timeout reached, defaulting to NipisOverview');
-        setOverviewComponent(<NipisOverview />);
-        setLoading(false);
-      }
-    }, 10000); // 10 seconds timeout
 
     if (sensorsData.error) {
       console.error('❌ DynamicOverview: Firestore error:', sensorsData.error);
       setError(sensorsData.error);
       setOverviewComponent(<NipisOverview />);
-      setLoading(false);
-      clearTimeout(timeout);
       return;
     }
 
     if (sensorsData.data && sensorsData.data.length > 0) {
       const latestSample = sensorsData.data[0];
       const sampleId = latestSample.sample_id || '';
-      
+
       console.log('📊 DynamicOverview: Found sample_id:', sampleId);
-      
+
       // Check if sample_id contains 'nipis' - case insensitive
       if (sampleId.toLowerCase().includes('nipis')) {
         console.log('🍋 DynamicOverview: Routing to NipisOverview');
@@ -117,28 +116,21 @@ const DynamicOverview = () => {
         console.log('🟢 DynamicOverview: Routing to KasturiOverview');
         setOverviewComponent(<KasturiOverview />);
       }
-      setLoading(false);
-      clearTimeout(timeout);
-    } else if (!sensorsData.loading && !loading) {
-      // If no data found, default to Nipis after initial load
+    } else if (!sensorsData.loading) {
+      // If no data found and not loading, default to Nipis
       console.log('📝 DynamicOverview: No data found, defaulting to NipisOverview');
       setOverviewComponent(<NipisOverview />);
-      setLoading(false);
-      clearTimeout(timeout);
     }
+  }, [sensorsData.data, sensorsData.loading, sensorsData.error]);
 
-    return () => clearTimeout(timeout);
-  }, [sensorsData.data, sensorsData.loading, sensorsData.error, loading]);
-  
-  if (loading || sensorsData.loading) {
+  // Only show loading if Firestore is loading AND we don't have a component yet
+  if (sensorsData.loading && !overviewComponent) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
-          <p className="text-xs text-gray-400 mt-2">
-            {sensorsData.loading ? 'Connecting to Firestore...' : 'Determining component...'}
-          </p>
+          <p className="text-xs text-gray-400 mt-2">Connecting to Firestore...</p>
         </div>
       </div>
     );

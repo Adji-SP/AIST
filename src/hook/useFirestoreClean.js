@@ -1,15 +1,26 @@
 // src/hook/useFirestoreClean.js
 // CLEAN React hooks - Just handles React state, uses shared library for logic
 import { useState, useEffect, useCallback } from 'react';
-import { getFirebaseClient } from '../../App/modules/lib/client/firebaseClient';
+import { getFirebaseClient } from '@lib/client/firebaseClient';
+
+// Cache for Firestore data to prevent unnecessary loading states
+const dataCache = new Map();
+const getCacheKey = (collectionName, options) => {
+    return `${collectionName}_${JSON.stringify(options)}`;
+};
 
 /**
  * Clean Firestore hook - Real-time subscription to a collection
  * All Firebase logic is in the shared library
+ * Now with caching to prevent re-loading on component remount
  */
 export const useFirestore = (collectionName, options = {}) => {
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const cacheKey = getCacheKey(collectionName, options);
+    const cachedData = dataCache.get(cacheKey);
+
+    // Initialize with cached data if available
+    const [data, setData] = useState(cachedData?.data || []);
+    const [loading, setLoading] = useState(!cachedData); // Only show loading if no cache
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -18,7 +29,10 @@ export const useFirestore = (collectionName, options = {}) => {
             return;
         }
 
-        setLoading(true);
+        // Only show loading if we don't have cached data
+        if (!cachedData) {
+            setLoading(true);
+        }
         setError(null);
 
         const firebaseClient = getFirebaseClient();
@@ -35,13 +49,19 @@ export const useFirestore = (collectionName, options = {}) => {
                     setData(documents);
                     setLoading(false);
                     setError(null);
+
+                    // Update cache
+                    dataCache.set(cacheKey, {
+                        data: documents,
+                        timestamp: Date.now()
+                    });
                 }
             }
         );
 
         // Cleanup subscription on unmount
         return unsubscribe;
-    }, [collectionName, JSON.stringify(options)]);
+    }, [collectionName, JSON.stringify(options), cacheKey, cachedData]);
 
     return { data, loading, error };
 };
@@ -154,6 +174,24 @@ export const useTasks = (siteId = null, isCompleted = null) => {
     }
 
     return useFirestore('tasks', options);
+};
+
+/**
+ * Utility to clear the Firestore cache
+ * Use this to force a refresh of all data
+ */
+export const clearFirestoreCache = () => {
+    dataCache.clear();
+    console.log('🗑️ Firestore cache cleared');
+};
+
+/**
+ * Utility to clear specific collection from cache
+ */
+export const clearCollectionCache = (collectionName, options = {}) => {
+    const cacheKey = getCacheKey(collectionName, options);
+    dataCache.delete(cacheKey);
+    console.log(`🗑️ Cache cleared for: ${collectionName}`);
 };
 
 export default useFirestore;

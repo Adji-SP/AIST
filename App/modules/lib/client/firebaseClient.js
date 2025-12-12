@@ -2,8 +2,8 @@
 // Shared Firebase client library - Works in both Node.js and Browser
 // This is the SINGLE source of truth for Firebase operations
 
-import { initializeApp } from 'firebase/app';
-import {
+const { initializeApp } = require('firebase/app');
+const {
     getFirestore,
     collection,
     doc,
@@ -17,7 +17,7 @@ import {
     updateDoc,
     deleteDoc,
     serverTimestamp
-} from 'firebase/firestore';
+} = require('firebase/firestore');
 
 /**
  * Firebase Client - Clean abstraction for Firebase operations
@@ -196,7 +196,7 @@ let firebaseClientInstance = null;
 /**
  * Get or create Firebase client instance
  */
-export function getFirebaseClient(config = null) {
+function getFirebaseClient(config = null) {
     if (!firebaseClientInstance) {
         if (!config) {
             // Try to get config from environment
@@ -215,4 +215,8 @@ export function getFirebaseClient(config = null) {
     return firebaseClientInstance;
 }
 
-export default FirebaseClient;
+// Export for CommonJS
+module.exports = FirebaseClient;
+module.exports.default = FirebaseClient;
+module.exports.getFirebaseClient = getFirebaseClient;
+module.exports.FirebaseClient = FirebaseClient;

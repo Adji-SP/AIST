@@ -262,7 +262,8 @@ const FinancialComparisonChart = ({ title, data, loading, onRefresh }) => {
 };
 
 const SDGCard = ({ sdg }) => {
-    const { goal, title, description, impact, icon: Icon, color, metrics, sources, disclaimer } = sdg;
+    const { goal, title, description, impact, icon: Icon, color, sources, disclaimer } = sdg;
+    // metrics destructured but not used - removed
     
     return (
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">

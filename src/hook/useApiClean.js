@@ -1,7 +1,7 @@
 // src/hook/useApiClean.js
 // CLEAN React hooks for API - Just React state, uses shared library
 import { useState, useCallback, useEffect } from 'react';
-import { getApiClient } from '../../App/modules/lib/client/apiClient';
+import { getApiClient } from '@lib/client/apiClient';
 
 /**
  * Clean API hook - Handles API requests with loading/error states
@@ -80,11 +80,12 @@ export const useApiSensorData = (filters = {}) => {
  * TODO: Implement proper serial connection via Electron IPC
  */
 export const useSerialConnection = () => {
-    const [status, setStatus] = useState({
+    const [status] = useState({
         connected: false,
         port: null,
         error: null
     });
+    // setStatus removed - not implemented yet (TODO)
 
     const reconnect = useCallback(async () => {
         // TODO: Implement via Electron IPC

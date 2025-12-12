@@ -115,11 +115,15 @@ let apiClientInstance = null;
 /**
  * Get or create API client instance
  */
-export function getApiClient(baseUrl = null) {
+function getApiClient(baseUrl = null) {
     if (!apiClientInstance) {
         apiClientInstance = new ApiClient(baseUrl);
     }
     return apiClientInstance;
 }
 
-export default ApiClient;
+// Export for CommonJS
+module.exports = ApiClient;
+module.exports.default = ApiClient;
+module.exports.getApiClient = getApiClient;
+module.exports.ApiClient = ApiClient;

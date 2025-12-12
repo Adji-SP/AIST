@@ -92,12 +92,12 @@ const Header = ({
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <ToggleGardenSelector
+          {/* <ToggleGardenSelector
             // PERUBAHAN 3: Gunakan state yang didapat dari URL
             selected={selectedGarden}
             onSelectionChange={handleGardenChange}
             options={gardenOptions}
-          />
+          /> */}
           <div className="flex items-center gap-2">
             <button className="relative p-2 rounded-full hover:bg-slate-100 transition-colors" aria-label="Notifications">
               <Bell className="w-6 h-6 text-slate-500" />

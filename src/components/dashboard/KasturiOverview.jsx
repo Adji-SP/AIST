@@ -11,7 +11,7 @@ import MetricCard from '../ui/MetricCard';
 import SensorChart from '../charts/sensorChart';
 import Alerts from '../ui/Alerts';
 import DeviceStatus from '../ui/DeviceStatus';
-import ProductionOverview from '../ui/ProductionOverview';
+import Tasks from '../ui/Tasks';
 import FarmingSuggestions from '../ui/FarmingSuggestions';
 import image_url from '../images/limaunipis.png';
 
@@ -172,7 +172,7 @@ const KasturiOverview = () => {
     });
 
     // Optional: Uncomment if needed for specific features
-    // const datasetParamData = useFirestore('dataset_param', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 20 });
+    const datasetParamData = useFirestore('dataset_param', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 20 });
     // const actionsData = useFirestore('actions', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 15 });
     // const historyData = useFirestore('history', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 25 });
     // const forecastData = useFirestore('forecast', { where: { field: 'sample_id', operator: '==', value: sampleId }, limit: 7 });
@@ -187,8 +187,8 @@ const KasturiOverview = () => {
         // For Firestore real-time data, we don't need to manually refetch
         console.log('Firestore data updates automatically via real-time listeners');
     };
-    
-    const lastUpdated = sensorData[0]?.timestamp || new Date().toISOString();
+
+    const lastUpdated = new Date(sensorData[0]?.timestamp || new Date());
     const [devices, setDevices] = useState([]);
     const [plantData, setPlantData] = useState(null);
     const [productionData, setProductionData] = useState(null);
@@ -352,7 +352,7 @@ const KasturiOverview = () => {
                         <span>{connectionStatus.text}</span>
                         {connectionStatus.pulse && <div className="w-2 h-2 bg-current rounded-full animate-pulse" title="Receiving live data"></div>}
                     </div>
-                    {lastUpdated && <span className="text-gray-500 hidden md:block">Last updated: {new Date(lastUpdated).toLocaleTimeString('en-US')}</span>}
+                    {lastUpdated && <span className="text-gray-500 hidden md:block">Last updated: {lastUpdated.toLocaleTimeString('en-US')}</span>}
                 </div>
 
                 <main className="flex-1 px-4 py-6 overflow-auto">
@@ -368,12 +368,8 @@ const KasturiOverview = () => {
                             </div>
                             
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <ProductionOverview
-                                    totalProduction={calculatedYield}
-                                    productionUnit="kg"
-                                    totalLandArea={productionData?.land_area || "2.5 hectares"}
-                                    landUsagePercentage={productionData?.land_usage || 0}
-                                    revenue={`RM ${calculatedRevenue}`}
+                                <Tasks
+                                    title="Daily Farming Tasks"
                                     loading={loading || sensorLoading}
                                 />
                                 {/* Farming suggestions based on sensor data */}

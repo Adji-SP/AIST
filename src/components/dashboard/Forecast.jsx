@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    Leaf, Thermometer, Droplet, Wind, Sun, Activity, BarChart3, AlertTriangle, Wifi, RefreshCw, CheckCircle, Clock
+    Thermometer, Droplet, Sun, Activity, AlertTriangle, Wifi, RefreshCw, CheckCircle, Clock
 } from 'lucide-react';
+// Removed unused: Leaf, Wind, BarChart3
 
 // Pastikan path ke komponen-komponen ini benar
 import Header from '../layout/header';

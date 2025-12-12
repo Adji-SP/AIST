@@ -2,10 +2,11 @@
 import React from 'react';
 import { CheckCircle, Circle } from 'lucide-react';
 
-const Tasks = ({ 
+const Tasks = ({
   tasks = [],
   title = "Tasks",
-  onTaskToggle
+  onTaskToggle,
+  loading = false
 }) => {
   // Default tasks if none provided
   const defaultTasks = [
@@ -52,6 +53,19 @@ const Tasks = ({
       onTaskToggle(task.id, !task.completed);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+        <div className="animate-pulse space-y-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-20 bg-gray-200 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-6">

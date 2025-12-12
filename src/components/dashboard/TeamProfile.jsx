@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 // Ikon yang dibutuhkan, termasuk Instagram
-import { User, Users, Briefcase, Code, Server, Award, Mail, Linkedin, Instagram, CheckCircle, ChartLine } from 'lucide-react';
+import { Users, Briefcase, Code, Server, Award, Mail, Linkedin, Instagram, CheckCircle, ChartLine } from 'lucide-react';
+// Removed unused: User
 import Sidebar from '../layout/sidebar';
 import Header from '../layout/header';
 // Mengimpor gambar lokal untuk latar belakang header

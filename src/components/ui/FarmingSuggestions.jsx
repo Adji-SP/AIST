@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
-import { 
-    Droplet, 
-    Leaf, 
-    Activity, 
-    AlertTriangle, 
-    CheckCircle, 
-    Clock, 
+import {
+    Droplet,
+    Leaf,
+    Activity,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
     Lightbulb,
     Beaker,
-    Scissors,
+    // Removed unused: Scissors
     Sun,
     GlassWater
 } from 'lucide-react';

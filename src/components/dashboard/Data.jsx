@@ -155,7 +155,7 @@ const DataPage = () => {
 
     // --- 1. Real-time Backend Data (Firestore) ---
     // Real-time sensor data with Firestore real-time updates
-    const { getSensorData } = useApi();
+    const { getSensorData, loading: apiLoading } = useApi();
     const siteId = 'site_a_3_acres';
     
     // Use Firestore hooks for real-time data
@@ -388,10 +388,9 @@ const DataPage = () => {
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [selectedGarden] = useState("Primary Key Lime Orchard");
+    // Removed: selectedGarden - value never used, appConfig.siteProfile.name used instead
     const [selectedMetric, setSelectedMetric] = useState('soil_health');
-    const [comparisonRatio, setComparisonRatio] = useState(9);
-    const [microalgaeInput, setMicroalgaeInput] = useState(6000);
+    // Removed: comparisonRatio, microalgaeInput - defined but never used
     const [landAreaInput, setLandAreaInput] = useState(3);
 
 

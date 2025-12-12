@@ -1,3 +1,3 @@
 // Root-level CRACO config wrapper
-// The actual configuration lives in config/craco.config.js
-module.exports = require('./config/craco.config.js');
+// The actual configuration lives in App/config/craco.config.js
+module.exports = require('./App/config/craco.config.js');

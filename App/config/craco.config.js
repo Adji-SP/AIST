@@ -14,11 +14,15 @@ module.exports = {
       }
 
       // Add App directory to resolve paths (optional aliases for cleaner imports)
+      // Note: __dirname is App/config, so:
+      //   '..' points to App/
+      //   '../..' points to project root
       webpackConfig.resolve.alias = {
         ...webpackConfig.resolve.alias,
-        '@app': path.resolve(__dirname, '..', 'App'),
-        '@modules': path.resolve(__dirname, '..', 'App/modules'),
-        '@lib': path.resolve(__dirname, '..', 'App/modules/lib'),
+        '@root': path.resolve(__dirname, '..', '..'),              // Host project root
+        '@app': path.resolve(__dirname, '..'),                     // App/ framework directory
+        '@modules': path.resolve(__dirname, '..', 'modules'),      // App/modules/
+        '@lib': path.resolve(__dirname, '..', 'modules', 'lib'),   // App/modules/lib/
       };
 
       return webpackConfig;

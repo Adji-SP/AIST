@@ -11,7 +11,7 @@ import MetricCard from '../ui/MetricCard';
 import SensorChart from '../charts/sensorChart';
 import Alerts from '../ui/Alerts';
 import DeviceStatus from '../ui/DeviceStatus';
-import ProductionOverview from '../ui/ProductionOverview';
+import Tasks from '../ui/Tasks';
 import FarmingSuggestions from '../ui/FarmingSuggestions';
 import image_url from '../images/limaunipis.png';
 
@@ -191,7 +191,7 @@ const NipisOverview = () => {
         // The data updates automatically. This is just for UI compatibility.
         console.log('🔄 Firestore data updates automatically via real-time listeners');
     };
-    const lastUpdated = sensorData[0]?.timestamp || new Date().toISOString();
+    const lastUpdated = new Date(sensorData[0]?.timestamp || new Date());
 
     // Use Firestore alerts directly instead of API
     const [alerts, setAlerts] = useState(alertsData.data || []);
@@ -288,7 +288,7 @@ const NipisOverview = () => {
         return [
             { icon: Leaf, title: "Total Carbon", value: latest?.soil_health ? `${latest.soil_health}%` : "8", description: "Excellent growth.", gradient: true, gradientFrom: "from-green-500", gradientTo: "to-green-600" },
             { icon: Activity, title: "Soil Organic Carbon", value: latest?.temperature ? `${latest.temperature}°C` : "8", description: "Optimal temperature.", iconColor: "text-orange-500" },
-            { icon: Droplet, title: "Cation Exchange", value: latest?.soil_moisture ? `${latest.soil_moisture}%` : "8", description: "Good ventilation needed.", iconColor: "text-blue-400" },
+            { icon: Droplet, title: "Carbon Exchange", value: latest?.soil_moisture ? `${latest.soil_moisture}%` : "8", description: "Good ventilation needed.", iconColor: "text-blue-400" },
             { icon: Droplet, title: "Organic Matter", value: latest?.ph_level || "8", description: "Ideal for nutrients.", iconColor: "text-teal-500" },
             { icon: Thermometer, title: "Temperature", value: latest?.phosphorus ? `${latest.phosphorus}ppm` : "8", description: "Sufficient for roots.", iconColor: "text-purple-500" },
             { icon: Wind, title: "Soil Moisture", value: latest?.potassium ? `${latest.potassium}ppm` : "8", description: "Promotes vigor.", iconColor: "text-sky-500" },
@@ -368,12 +368,8 @@ const NipisOverview = () => {
                                 {metricsData.map((metric, index) => <MetricCard key={index} {...metric} loading={sensorLoading && !latestSensorData} />)}
                             </div>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <ProductionOverview
-                                    totalProduction={calculatedYield}
-                                    productionUnit="kg"
-                                    totalLandArea={productionData?.land_area || "3 acres"}
-                                    landUsagePercentage={productionData?.land_usage || 0}
-                                    revenue={`RM ${calculatedRevenue}`}
+                                <Tasks
+                                    title="Daily Farming Tasks"
                                     loading={loading || sensorLoading}
                                 />
                                 {/* in this place just focused on putting suggestion */}

@@ -6,7 +6,10 @@
  * Handles subscriptions, reconnection, and message routing
  */
 class WebSocketClient {
-    constructor(config = {}) {
+    constructor(config) {
+        // Handle null or undefined config
+        config = config || {};
+
         this.config = {
             url: config.url || process.env.REACT_APP_WS_URL || `ws://localhost:${process.env.WEBSOCKET_PORT || 8080}`,
             reconnectDelay: config.reconnectDelay || 5000,
@@ -302,7 +305,7 @@ let wsClientInstance = null;
 /**
  * Get or create WebSocket client instance
  */
-export function getWebSocketClient(config = null) {
+function getWebSocketClient(config = null) {
     if (!wsClientInstance) {
         wsClientInstance = new WebSocketClient(config);
         // Auto-connect
@@ -311,4 +314,8 @@ export function getWebSocketClient(config = null) {
     return wsClientInstance;
 }
 
-export default WebSocketClient;
+// Export for CommonJS
+module.exports = WebSocketClient;
+module.exports.default = WebSocketClient;
+module.exports.getWebSocketClient = getWebSocketClient;
+module.exports.WebSocketClient = WebSocketClient;

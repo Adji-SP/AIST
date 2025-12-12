@@ -1,7 +1,8 @@
 // src/hook/useRealtimeClean.js
 // CLEAN React hooks for real-time WebSocket data
-import { useState, useEffect, useCallback } from 'react';
-import { getWebSocketClient } from '../../App/modules/lib/client/websocketClient';
+import { useState, useEffect } from 'react';
+// Removed unused: useCallback
+import { getWebSocketClient } from '@lib/client/websocketClient';
 
 /**
  * Main real-time hook - Subscribe to WebSocket topics
