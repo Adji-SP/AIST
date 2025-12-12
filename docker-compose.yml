@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # Backend + ML Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ta-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"  # API Server
+      - "8080:8080"  # WebSocket Server
+    environment:
+      - NODE_ENV=production
+      - API_PORT=3001
+      - WEBSOCKET_PORT=8080
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN}
+      - FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL}
+      - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
+      - REACT_APP_API_URL=http://localhost:3001
+      - REACT_APP_WS_URL=ws://localhost:8080
+    volumes:
+      - ./models:/app/models  # Mount models directory
+      - ./App/python:/app/App/python  # Mount Python code for development
+      - backend-logs:/app/logs
+    networks:
+      - ta-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (Development)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ta-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:3001
+      - REACT_APP_WS_URL=ws://localhost:8080
+      - REACT_APP_FIREBASE_API_KEY=${REACT_APP_FIREBASE_API_KEY}
+      - REACT_APP_FIREBASE_AUTH_DOMAIN=${REACT_APP_FIREBASE_AUTH_DOMAIN}
+      - REACT_APP_FIREBASE_PROJECT_ID=${REACT_APP_FIREBASE_PROJECT_ID}
+      - REACT_APP_FIREBASE_STORAGE_BUCKET=${REACT_APP_FIREBASE_STORAGE_BUCKET}
+      - REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${REACT_APP_FIREBASE_MESSAGING_SENDER_ID}
+      - REACT_APP_FIREBASE_APP_ID=${REACT_APP_FIREBASE_APP_ID}
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - node-modules:/app/node_modules
+    networks:
+      - ta-network
+    depends_on:
+      - backend
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: ta-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ta-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ML Model Server (Optional - for dedicated ML inference)
+  ml-server:
+    build:
+      context: ./App/python
+      dockerfile: Dockerfile.ml
+    container_name: ta-ml-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./models:/app/models
+      - ./App/python:/app/code
+    networks:
+      - ta-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  ta-network:
+    driver: bridge
+
+volumes:
+  node-modules:
+  redis-data:
+  backend-logs:

@@ -10,7 +10,8 @@ import {
     Beaker,
     // Removed unused: Scissors
     Sun,
-    GlassWater
+    GlassWater,
+    ShieldCheck
 } from 'lucide-react';
 
 const FarmingSuggestions = ({ sensorData, loading }) => {
@@ -191,6 +192,53 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
         }
     };
 
+    const priorityCounts = useMemo(() => ({
+        high: suggestions.filter(item => item.priority === 'high').length,
+        medium: suggestions.filter(item => item.priority === 'medium').length,
+        low: suggestions.filter(item => item.priority === 'low').length
+    }), [suggestions]);
+
+    const statusTone = useMemo(() => {
+        if (suggestions.length === 0) {
+            return {
+                Icon: ShieldCheck,
+                title: 'Healthy environment',
+                message: 'All readings are inside the target range. We will surface next steps if anything drifts.',
+                bg: 'bg-emerald-50',
+                border: 'border-emerald-200',
+                accent: 'bg-emerald-100 text-emerald-700'
+            };
+        }
+        if (priorityCounts.high > 0) {
+            return {
+                Icon: AlertTriangle,
+                title: 'Action needed',
+                message: 'High-priority items detected. Address these first to keep plants stable.',
+                bg: 'bg-rose-50',
+                border: 'border-rose-200',
+                accent: 'bg-rose-100 text-rose-700'
+            };
+        }
+        if (priorityCounts.medium > 0) {
+            return {
+                Icon: Clock,
+                title: 'Upcoming tasks',
+                message: 'Medium-priority guidance available. Plan these into your next rounds.',
+                bg: 'bg-amber-50',
+                border: 'border-amber-200',
+                accent: 'bg-amber-100 text-amber-700'
+            };
+        }
+        return {
+            Icon: Lightbulb,
+            title: 'Advisory only',
+            message: 'Low-priority optimizations to keep conditions on track.',
+            bg: 'bg-sky-50',
+            border: 'border-sky-200',
+            accent: 'bg-sky-100 text-sky-700'
+        };
+    }, [priorityCounts.high, priorityCounts.medium, suggestions.length]);
+
     if (loading) {
         return (
             <div className="bg-white rounded-lg p-6 shadow-sm border h-full">
@@ -205,22 +253,56 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
     }
 
     return (
-        <div className="bg-white rounded-lg p-6 shadow-sm border h-full">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">Condition & Suggestion</h3>
-                <div className="flex items-center text-sm text-gray-500">
-                    <Activity className="w-4 h-4 mr-1" />
-                    {suggestions.length} suggestions
+        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 h-full flex flex-col">
+            <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                        <Activity className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Condition overview</p>
+                        <h3 className="text-lg font-semibold text-gray-900">Condition & Suggestion</h3>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-3 py-1.5 rounded-full bg-slate-100 text-sm font-semibold text-slate-700 shadow-inner">{suggestions.length} live tips</span>
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${statusTone.accent} shadow-sm`}>{statusTone.title}</span>
                 </div>
             </div>
-            
-            <div className="space-y-4 max-h-96 overflow-y-auto">
+
+            <div className={`mb-4 rounded-xl border ${statusTone.border} ${statusTone.bg} p-4`}>
+                <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-white/80 shadow-sm">
+                        <statusTone.Icon className="w-5 h-5 text-gray-700" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-800">{statusTone.title}</p>
+                        <p className="text-xs text-gray-600 leading-relaxed">{statusTone.message}</p>
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="flex items-center justify-between rounded-lg bg-white/70 border border-gray-200 px-3 py-2">
+                                <span className="text-xs text-gray-500">High</span>
+                                <span className="text-sm font-semibold text-rose-600">{priorityCounts.high}</span>
+                            </div>
+                            <div className="flex items-center justify-between rounded-lg bg-white/70 border border-gray-200 px-3 py-2">
+                                <span className="text-xs text-gray-500">Medium</span>
+                                <span className="text-sm font-semibold text-amber-600">{priorityCounts.medium}</span>
+                            </div>
+                            <div className="flex items-center justify-between rounded-lg bg-white/70 border border-gray-200 px-3 py-2">
+                                <span className="text-xs text-gray-500">Low</span>
+                                <span className="text-sm font-semibold text-emerald-600">{priorityCounts.low}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-4 max-h-96 overflow-y-auto pr-1">
                 {suggestions.map((suggestion) => {
                     const Icon = suggestion.icon;
                     return (
                         <div
                             key={suggestion.id}
-                            className={`relative p-5 rounded-xl border ${suggestion.bgColor} ${suggestion.borderColor} transition-all duration-300 hover:shadow-lg hover:scale-[1.02] overflow-hidden`}
+                            className={`relative p-5 rounded-xl border ${suggestion.bgColor} ${suggestion.borderColor} transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden`}
                         >
                             {/* Background Pattern */}
                             <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
@@ -228,46 +310,47 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
                             </div>
                             
                             <div className="relative z-10">
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center gap-3">
+                                <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+                                    <div className="flex items-start gap-3">
                                         <div className={`p-2 rounded-lg ${suggestion.iconBg}`}>
                                             <Icon className={`w-5 h-5 ${suggestion.color}`} />
                                         </div>
                                         <div>
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Guidance</p>
                                             <h4 className={`font-semibold text-base ${suggestion.color}`}>
                                                 {suggestion.title}
                                             </h4>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                {suggestion.description}
-                                            </p>
                                         </div>
                                     </div>
-                                    {getPriorityIcon(suggestion.priority)}
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm ${
+                                            suggestion.priority === 'high' ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                                            suggestion.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 
+                                            'bg-gradient-to-r from-emerald-500 to-teal-500'
+                                        }`}>
+                                            {suggestion.priority === 'high' ? 'High priority' :
+                                             suggestion.priority === 'medium' ? 'Medium priority' : 'Low priority'}
+                                        </span>
+                                        <div className="flex items-center gap-1 text-xs text-gray-600 bg-white/70 px-2 py-1 rounded-full border border-white/60">
+                                            <Clock className="w-3 h-3" />
+                                            <span>{suggestion.timeframe}</span>
+                                        </div>
+                                        {getPriorityIcon(suggestion.priority)}
+                                    </div>
                                 </div>
                                 
-                                <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-white/50 mb-3 shadow-sm">
+                                <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                                    {suggestion.description}
+                                </p>
+
+                                <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-white/60 mb-3 shadow-sm">
                                     <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                                         <Lightbulb className="w-3 h-3" />
-                                        Recommended Action:
+                                        Recommended action
                                     </p>
                                     <p className="text-sm text-gray-700 leading-relaxed">
                                         {suggestion.action}
                                     </p>
-                                </div>
-                                
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className={`px-3 py-1.5 rounded-full font-medium text-white shadow-sm ${
-                                        suggestion.priority === 'high' ? 'bg-gradient-to-r from-red-500 to-rose-500' :
-                                        suggestion.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 
-                                        'bg-gradient-to-r from-emerald-500 to-teal-500'
-                                    }`}>
-                                        {suggestion.priority === 'high' ? 'High Priority' :
-                                         suggestion.priority === 'medium' ? 'Medium Priority' : 'Low Priority'}
-                                    </span>
-                                    <div className="flex items-center gap-1 text-gray-600 bg-white/50 px-2 py-1 rounded-full">
-                                        <Clock className="w-3 h-3" />
-                                        <span>{suggestion.timeframe}</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -276,9 +359,10 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             </div>
             
             {suggestions.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 border border-dashed border-emerald-200 rounded-lg bg-emerald-50/70 mt-2">
                     <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-400" />
-                    <p>All parameters are in optimal condition</p>
+                    <p className="font-semibold text-emerald-800">All parameters are in optimal condition</p>
+                    <p className="text-sm text-emerald-700 mt-1">We will surface targeted actions here when something needs attention.</p>
                 </div>
             )}
         </div>

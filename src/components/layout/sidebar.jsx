@@ -14,7 +14,7 @@ const Sidebar = ({
   const customMenuItems = [
     { path: '/overview', icon: Home, label: 'Overview' },
     { path: '/data', icon: History, label: 'Data Analytics' },
-    { path: '/finance-analytics', icon: BarChart2, label: 'ESG & SDGS' },
+    // { path: '/finance-analytics', icon: BarChart2, label: 'ESG & SDGS' },
     { path: '/maintenance', icon: Wrench, label: 'Task Schedule' },
     { path: '/team-profile', icon: Users, label: 'Team Profile' },
   ];

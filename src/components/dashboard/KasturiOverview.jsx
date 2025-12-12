@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-    Leaf, Thermometer, Droplet, Wind, Sun, Activity, BarChart3, AlertTriangle, Wifi, WifiOff, CloudRain, Sunrise, Sunset, X, Cloud, Zap, RefreshCw, ServerCrash
+    Leaf, Thermometer, Droplet, Wind, Sun, Activity, BarChart3, AlertTriangle, Wifi, WifiOff, CloudRain, Sunrise, Sunset, X, Cloud, Zap, RefreshCw, ServerCrash, Megaphone
 } from 'lucide-react';
 
 // Import existing UI and layout components
@@ -198,6 +198,7 @@ const KasturiOverview = () => {
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [selectedGarden, setSelectedGarden] = useState("Kasturi Orchard");
     const [showWeatherModal, setShowWeatherModal] = useState(false);
+    const [showDemoBanner, setShowDemoBanner] = useState(true);
 
     useEffect(() => {
         const fetchWeatherData = async () => {
@@ -347,16 +348,46 @@ const KasturiOverview = () => {
                 />
 
                 <div className="bg-white border-b px-4 py-2 flex justify-between items-center text-sm sticky top-0 z-10">
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${connectionStatus.color}`}>
-                        <connectionStatus.Icon className="w-4 h-4" />
-                        <span>{connectionStatus.text}</span>
-                        {connectionStatus.pulse && <div className="w-2 h-2 bg-current rounded-full animate-pulse" title="Receiving live data"></div>}
+                    <div className="flex items-center gap-3">
+                        {/* Demo Mode Badge */}
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-50 to-sky-50 text-blue-700 border border-blue-200">
+                            <Megaphone className="w-4 h-4" />
+                            <span>DEMO MODE</span>
+                        </div>
+
+                        {/* Connection Status */}
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${connectionStatus.color}`}>
+                            <connectionStatus.Icon className="w-4 h-4" />
+                            <span>{connectionStatus.text}</span>
+                            {connectionStatus.pulse && <div className="w-2 h-2 bg-current rounded-full animate-pulse" title="Receiving live data"></div>}
+                        </div>
                     </div>
                     {lastUpdated && <span className="text-gray-500 hidden md:block">Last updated: {lastUpdated.toLocaleTimeString('en-US')}</span>}
                 </div>
 
                 <main className="flex-1 px-4 py-6 overflow-auto">
                     {(loading || (sensorLoading && !sensorData)) && <div className="text-center py-12 font-medium text-gray-600">Loading dashboard data...</div>}
+
+                    {showDemoBanner && (
+                        <div className="mb-6 bg-gradient-to-r from-blue-50 via-sky-50 to-emerald-50 border border-blue-100 rounded-xl p-4 md:p-5 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-blue-100 text-blue-700 shadow-sm">
+                                    <Megaphone className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Demo mode</p>
+                                    <p className="text-sm text-slate-800 font-semibold">Data shown here is for demonstration purposes.</p>
+                                    <p className="text-sm text-slate-600">Sensor feeds and actions may be simulated or delayed.</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowDemoBanner(false)}
+                                className="self-start md:self-auto px-3 py-2 text-sm font-semibold text-blue-800 bg-white border border-blue-100 rounded-lg shadow-sm hover:shadow transition"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
                         <div className="lg:col-span-2 flex flex-col gap-6">
