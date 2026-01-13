@@ -24,11 +24,11 @@ const bootstrap = require('./bootstrap');
 const config = require('./config');
 
 // Module managers (for direct access if needed)
-const DatabaseManager = require('./modules/modules_config/database/databaseManager');
-const APIServer = require('./modules/modules_config/api/apiServer');
-const SerialManager = require('./modules/modules_config/serial/serialManager');
-const IPCManager = require('./modules/modules_config/ipc/ipcManager');
-const WebsocketManager = require('./modules/modules_config/websocket/websocketManager');
+const DatabaseManager = require('./modules/manager/database/databaseManager');
+const APIServer = require('./modules/manager/api/apiServer');
+const SerialManager = require('./modules/manager/serial/serialManager');
+const IPCManager = require('./modules/manager/ipc/ipcManager');
+const WebsocketManager = require('./modules/manager/websocket/websocketManager');
 
 // Libraries (for frontend/client usage)
 const lib = {

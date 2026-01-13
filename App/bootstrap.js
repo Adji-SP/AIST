@@ -16,11 +16,11 @@ const { EVENTS } = require('./config/constants');
 const { getInstance: getEventBus } = require('./modules/lib/events/EventBus');
 
 // Import modular components
-const DatabaseManager = require('./modules/modules_config/database/databaseManager');
-const APIServer = require('./modules/modules_config/api/apiServer');
-const SerialManager = require('./modules/modules_config/serial/serialManager');
-const IPCManager = require('./modules/modules_config/ipc/ipcManager');
-const WebsocketManager = require('./modules/modules_config/websocket/websocketManager');
+const DatabaseManager = require('./modules/manager/database/databaseManager');
+const APIServer = require('./modules/manager/api/apiServer');
+const SerialManager = require('./modules/manager/serial/serialManager');
+const IPCManager = require('./modules/manager/ipc/ipcManager');
+const WebsocketManager = require('./modules/manager/websocket/websocketManager');
 const EncryptionService = require('./modules/lib/security/EncryptionService');
 
 class AppBootstrap {
@@ -137,7 +137,7 @@ class AppBootstrap {
 
     async initializeWindow(electron) {
         console.log('[Bootstrap] Initializing window manager...');
-        const WindowManager = require('./modules/modules_config/window/windowManager');
+        const WindowManager = require('./modules/manager/window/windowManager');
         this.windowManager = new WindowManager();
 
         if (electron.window) {
