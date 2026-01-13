@@ -1,7 +1,4 @@
-// modules/database/databaseManager.js - Enhanced with new database adapter
-const FirebaseDB = require('../../lib/db/firebaseDB');
-const Database = require('../../lib/db/mysqlDB');
-const CosmosDB = require('../../lib/db/cosmosDB');
+// modules/database/databaseManager.js - Cleaned and Refactored
 const { getInstance: getDatabaseAdapter } = require('../../lib/db/databaseAdapter');
 const { getInstance: getEventBus } = require('../../lib/events/EventBus');
 const { getInstance: getLogger } = require('../../lib/services/LoggingService');
@@ -31,118 +28,90 @@ class DatabaseManager {
 
     async initialize() {
         try {
-            // Use both new logger and old alert for backward compatibility
             this.logger.info('Initializing database manager', { mode: this.dbType });
             alert.system.startup(`Database Manager (${this.dbType} mode)`);
 
-            // NEW: Use enhanced database adapter for all supported types
-            const supportedTypes = ['mysql', 'firestore', 'cosmosdb', 'hybrid', 'hybrid-cosmos'];
+            // Initialize the Adapter (The Single Source of Truth)
+            this.dbAdapter = getDatabaseAdapter(this.encryptionService, this.config);
+            await this.dbAdapter.initialize();
+            
+            // Assign adapter to this.db to maintain compatibility with legacy code 
+            // that calls this.db.postData() directly
+            this.db = this.dbAdapter;
 
-            if (supportedTypes.includes(this.dbType)) {
-                this.dbAdapter = getDatabaseAdapter(this.encryptionService, this.config);
-                await this.dbAdapter.initialize();
-                this.db = this.dbAdapter; // Provide compatibility interface
+            // Log success details
+            const adapterConfig = this.dbAdapter.getConfig();
+            this.logger.info('Database initialized successfully', {
+                type: adapterConfig.type,
+                primary: adapterConfig.primaryDatabase,
+                secondary: adapterConfig.secondaryDatabase
+            });
 
-                const adapterConfig = this.dbAdapter.getConfig();
-                this.logger.info('Database initialized successfully', {
-                    type: adapterConfig.type,
-                    primary: adapterConfig.primaryDatabase,
-                    secondary: adapterConfig.secondaryDatabase
-                });
-                alert.success('DATABASE', `${adapterConfig.type} mode initialized successfully`);
-                if (adapterConfig.primaryDatabase) {
-                    alert.info('DATABASE', `Primary: ${adapterConfig.primaryDatabase}`);
-                }
-                if (adapterConfig.secondaryDatabase) {
-                    alert.info('DATABASE', `Secondary: ${adapterConfig.secondaryDatabase} (auto-sync)`);
-                }
-
-                // Emit event for new framework
-                this.eventBus.emit('database:ready', this);
-                return;
+            alert.success('DATABASE', `${adapterConfig.type} mode initialized successfully`);
+            
+            if (adapterConfig.primaryDatabase) {
+                alert.info('DATABASE', `Primary: ${adapterConfig.primaryDatabase}`);
+            }
+            if (adapterConfig.secondaryDatabase) {
+                alert.info('DATABASE', `Secondary: ${adapterConfig.secondaryDatabase} (auto-sync)`);
             }
 
-            // Fallback: Legacy single database initialization (backward compatibility)
-            this.logger.warn('Using legacy database initialization');
-            alert.warning('DATABASE', 'Using legacy database initialization. Consider using DB_TYPE env variable.');
-
-            if (this.dbType === 'firebase' || this.dbType === 'firestore') {
-                const fbConfig = this.config.firebase || {};
-                this.db = new FirebaseDB({
-                    apiKey: fbConfig.apiKey,
-                    authDomain: fbConfig.authDomain,
-                    databaseURL: fbConfig.databaseURL,
-                    projectId: fbConfig.projectId,
-                    storageBucket: fbConfig.storageBucket,
-                    messagingSenderId: fbConfig.messagingSenderId,
-                    appId: fbConfig.appId,
-                    measurementId: fbConfig.measurementId,
-                    useFirestore: fbConfig.useFirestore
-                }, this.encryptionService);
-                await this.db.connect();
-            } else if (this.dbType === 'cosmosdb') {
-                const cosmosConfig = this.config.cosmosdb || {};
-                this.db = new CosmosDB({
-                    connectionString: cosmosConfig.connectionString,
-                    accountName: cosmosConfig.accountName,
-                    accountKey: cosmosConfig.accountKey,
-                    database: cosmosConfig.database || 'monitor_db'
-                }, this.encryptionService);
-                await this.db.connect();
-            } else {
-                const mysqlConfig = this.config.mysql || {};
-                this.db = new Database({
-                    host: mysqlConfig.host || 'localhost',
-                    user: mysqlConfig.user || 'root',
-                    password: mysqlConfig.password || '',
-                    database: mysqlConfig.database || 'monitor_db'
-                }, this.encryptionService);
-                await this.db.connect();
-            }
-
-            this.logger.info('Database layer ready', { type: this.dbType });
-            alert.database.connected(this.dbType, 'Database layer ready');
-
-            // Emit event for new framework
+            // Emit event so other modules know DB is ready
             this.eventBus.emit('database:ready', this);
 
         } catch (error) {
             this.logger.error('Database initialization failed', { error: error.message, stack: error.stack });
             alert.database.error('Database initialization', error);
+            
             this.eventBus.emit('database:error', error);
             throw error;
         }
     }
 
+    /**
+     * Returns the raw database instance (now the Adapter).
+     * Used by controllers and services.
+     */
     getDatabase() {
         return this.db;
     }
 
-    // NEW: Get enhanced database adapter
+    /**
+     * Explicitly returns the adapter (same as getDatabase in this new architecture).
+     * Kept for interface consistency.
+     */
     getDatabaseAdapter() {
         return this.dbAdapter;
     }
 
-    // Get database configuration info
+    /**
+     * Returns configuration metadata.
+     */
     getDatabaseInfo() {
         if (this.dbAdapter) {
             return this.dbAdapter.getConfig();
         }
         return {
             type: this.dbType,
-            useFirestore: this.db?.isFirestore || false,
-            useAdapter: !!this.dbAdapter
+            status: 'uninitialized'
         };
     }
 
+    /**
+     * Gracefully closes connections.
+     */
     async close() {
-        if (this.db) {
+        if (this.dbAdapter) {
             try {
                 this.logger.info('Closing database connection');
-                await this.db.close();
+                await this.dbAdapter.close();
+                
                 this.logger.info('Database connection closed successfully');
                 alert.database.disconnected('Database Manager');
+                
                 this.eventBus.emit('database:closed', this);
+                this.db = null;
+                this.dbAdapter = null;
             } catch (error) {
                 this.logger.error('Error closing database connection', { error: error.message });
                 alert.database.error('Connection close', error);
@@ -152,6 +121,7 @@ class DatabaseManager {
         }
     }
 
+    // Helper methods for type checking (used by some UI logic)
     isFirebase() {
         return this.dbType === 'firestore' || this.dbType === 'firebase';
     }
@@ -168,12 +138,12 @@ class DatabaseManager {
         return this.dbType === 'hybrid' || this.dbType === 'hybrid-cosmos';
     }
 
-    // NEW: Get health check information
+    // Health check delegation
     async getHealthCheck() {
         if (this.dbAdapter && this.dbAdapter.healthCheck) {
             return await this.dbAdapter.healthCheck();
         }
-        return { status: 'unknown', type: this.isFirebase() ? 'firebase' : 'mysql' };
+        return { status: 'unknown', type: this.dbType };
     }
 }
 

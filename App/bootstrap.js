@@ -14,6 +14,7 @@ const path = require('path');
 const configResolver = require('./config');
 const { EVENTS } = require('./config/constants');
 const { getInstance: getEventBus } = require('./modules/lib/events/EventBus');
+const registerRoutes = require('./Http/routes');
 
 // Import modular components
 const DatabaseManager = require('./modules/manager/database/databaseManager');
@@ -22,6 +23,8 @@ const SerialManager = require('./modules/manager/serial/serialManager');
 const IPCManager = require('./modules/manager/ipc/ipcManager');
 const WebsocketManager = require('./modules/manager/websocket/websocketManager');
 const EncryptionService = require('./modules/lib/security/EncryptionService');
+const DatabaseService = require('./modules/lib/services/DatabaseService');
+const { getInstance: getValidationService } = require('./modules/lib/services/ValidationService');
 
 class AppBootstrap {
     constructor() {
@@ -121,7 +124,7 @@ class AppBootstrap {
         }
     }
 
-    initializeEncryptionService() {
+   initializeEncryptionService() {
         console.log('[Bootstrap] Initializing encryption service...');
         const encryptionKey = this.config.encryption.key;
         this.encryptionService = new EncryptionService(encryptionKey);
@@ -132,12 +135,17 @@ class AppBootstrap {
         console.log('[Bootstrap] Initializing database...');
         this.databaseManager = new DatabaseManager(this.encryptionService, this.config.database);
         await this.databaseManager.initialize();
+        const dbAdapter = this.databaseManager.getDatabaseAdapter();
+        const validationService = getValidationService();
+        
+        this.databaseService = new DatabaseService(dbAdapter, validationService);
+
         this.eventBus.emit(EVENTS.DATABASE_READY, this.databaseManager);
     }
 
     async initializeWindow(electron) {
         console.log('[Bootstrap] Initializing window manager...');
-        const WindowManager = require('./modules/manager/window/windowManager');
+        const WindowManager = require('./modules/modules_config/window/windowManager'); 
         this.windowManager = new WindowManager();
 
         if (electron.window) {
@@ -153,8 +161,8 @@ class AppBootstrap {
 
     async initializeAPI() {
         console.log('[Bootstrap] Initializing API server...');
-        const db = this.databaseManager ? this.databaseManager.getDatabase() : null;
-        this.apiServer = new APIServer(db, this.config.api);
+        const db = this.databaseService; 
+        this.apiServer = new APIServer(db, this.config.api, registerRoutes);
 
         if (this.mode !== 'serverless') {
             await this.apiServer.start();
@@ -165,7 +173,8 @@ class AppBootstrap {
 
     async initializeSerial() {
         console.log('[Bootstrap] Initializing serial manager...');
-        const db = this.databaseManager ? this.databaseManager.getDatabase() : null;
+        
+        const db = this.databaseService;
         const window = this.windowManager ? this.windowManager.getMainWindow() : null;
 
         this.serialManager = new SerialManager(db, window, this.config.serial);
@@ -175,7 +184,8 @@ class AppBootstrap {
 
     async initializeWebsocket() {
         console.log('[Bootstrap] Initializing websocket manager...');
-        const db = this.databaseManager ? this.databaseManager.getDatabase() : null;
+        
+        const db = this.databaseService;
         const window = this.windowManager ? this.windowManager.getMainWindow() : null;
 
         this.websocketManager = new WebsocketManager(db, window, this.config.websocket);
@@ -183,11 +193,11 @@ class AppBootstrap {
         this.eventBus.emit(EVENTS.WEBSOCKET_READY, this.websocketManager);
     }
 
-    async initializeIPC() {
+   async initializeIPC() {
         console.log('[Bootstrap] Initializing IPC manager...');
-        const db = this.databaseManager ? this.databaseManager.getDatabase() : null;
-
-        this.ipcManager = new IPCManager(db, this.serialManager);
+        const dbService = this.databaseService; 
+        this.ipcManager = new IPCManager(dbService, this.serialManager);
+        
         this.ipcManager.setupHandlers();
         this.eventBus.emit(EVENTS.IPC_READY, this.ipcManager);
     }
