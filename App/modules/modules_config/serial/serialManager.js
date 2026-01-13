@@ -1,32 +1,34 @@
 // modules/serial/serialManager.js
+const LifecycleManager = require('../../lib/base/LifecycleManager');
+const { getInstance: getEventBus } = require('../../lib/events/EventBus');
+const { getInstance: getLogger } = require('../../lib/services/LoggingService');
 const SerialCommunicator = require('../../lib/com/serialCommunicator');
-const alert = require('../../lib/alert');
+const alert = require('../../lib/alert'); // Keep for backward compatibility
 
-class SerialManager {
-    constructor(database, mainWindow) {
+class SerialManager extends LifecycleManager {
+    constructor(database, mainWindow, config = {}) {
+        super('SerialManager');
+
         this.database = database;
         this.mainWindow = mainWindow;
         this.serialCommunicator = null;
-        this.config = this.getSerialConfig();
+        this.config = config;
+
+        // Initialize new services
+        this.eventBus = getEventBus();
+        const mode = this.mainWindow ? 'Electron' : 'Server';
+        this.logger = getLogger().child({ module: 'SerialManager', mode });
     }
 
-    getSerialConfig() {
-        return {
-            portPath: process.env.SERIAL_PORT || null,
-            baudRate: process.env.SERIAL_BAUDRATE || 9600,
-            lineDelimiter: process.env.SERIAL_LINE_DELIMITER || '\r\n',
-            dataType: process.env.SERIAL_DATA_TYPES || 'json-object',
-            dbTableName: process.env.SERIAL_DB_TABLE_NAME || 'sensors_table',
-            requiredFields: process.env.SERIAL_REQUIRED_FIELDS || [],
-            fieldsToEncrypt: process.env.SERIAL_FIELD_TO_ENCRYPT || [],
-        };
-    }
-
-    async initialize() {
+    // Override LifecycleManager method
+    async _doInitialize() {
         try {
+            const mode = this.mainWindow ? 'Electron' : 'Server';
+            this.logger.info('Initializing serial manager', { mode });
+
             this.serialCommunicator = new SerialCommunicator(
-                this.config, 
-                this.database, 
+                this.config,
+                this.database,
                 this.mainWindow
             );
 
@@ -37,12 +39,35 @@ class SerialManager {
                 this.serialCommunicator.connect();
             }, delay);
 
-            const mode = this.mainWindow ? 'Electron' : 'Server';
+            this.logger.info('Serial manager initialized successfully', { mode });
             alert.system.ready(`Serial Manager (${mode} mode)`);
+            this.eventBus.emit('serial:ready', this);
         } catch (error) {
+            this.logger.error('Serial manager initialization failed', { error: error.message });
             alert.error('SERIAL', 'Manager initialization failed', error);
+            this.eventBus.emit('serial:error', error);
             throw error;
         }
+    }
+
+    // Override LifecycleManager method
+    async _doShutdown() {
+        if (this.serialCommunicator) {
+            try {
+                this.logger.info('Shutting down serial communicator');
+                await this.serialCommunicator.close();
+                this.logger.info('Serial communicator closed successfully');
+                this.eventBus.emit('serial:closed', this);
+            } catch (error) {
+                this.logger.error('Error closing serial communicator', { error: error.message });
+                throw error;
+            }
+        }
+    }
+
+    // Keep legacy initialize method for backward compatibility
+    async initialize() {
+        return super.initialize();
     }
 
     getStatus() {

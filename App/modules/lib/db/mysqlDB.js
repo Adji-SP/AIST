@@ -1,11 +1,6 @@
 // /lib/db/mysqlDB.js
 const mysql = require('mysql2');
-const crypto = require('crypto');
 const alert = require('../alert');
-
-const ALGORITHM = 'aes-256-cbc';
-const SECRET_KEY = crypto.createHash('sha256').update(process.env.DB_ENCRYPTION_KEY || '').digest();
-const IV_LENGTH = 16;
 
 class QueryBuilder {
     constructor(database, tableName) {
@@ -316,9 +311,14 @@ class QueryBuilder {
 }
 
 class Database {
-    constructor(config) {
+    constructor(config, encryptionService) {
+        if (!encryptionService) {
+            throw new Error('EncryptionService is required for Database');
+        }
+
         this.connection = mysql.createConnection(config);
         this.config = config;
+        this.encryption = encryptionService;
     }
 
     connect() {
@@ -374,32 +374,6 @@ class Database {
         }
     }
 
-    encrypt(text) {
-        if (text === null || typeof text === 'undefined') return text;
-        const iv = crypto.randomBytes(IV_LENGTH);
-        const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
-        let encrypted = cipher.update(String(text), 'utf8', 'hex');
-        encrypted += cipher.final('hex');
-        return iv.toString('hex') + ':' + encrypted;
-    }
-
-    decrypt(encryptedText) {
-        if (typeof encryptedText !== 'string' || !encryptedText.includes(':')) {
-            return encryptedText;
-        }
-        try {
-            const textParts = encryptedText.split(':');
-            const iv = Buffer.from(textParts.shift(), 'hex');
-            const encryptedData = textParts.join(':');
-            const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
-            let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
-            decrypted += decipher.final('utf8');
-            return decrypted;
-        } catch (error) {
-            return encryptedText;
-        }
-    }
-
     // EXISTING METHODS (unchanged for backward compatibility)
     postData(tableName, data = {}) {
         const dataToInsert = { ...data };
@@ -420,17 +394,7 @@ class Database {
     }
 
     _decryptRow(row) {
-        const decryptedRow = { ...row };
-        for (const key in decryptedRow) {
-            if (typeof decryptedRow[key] === 'string' && decryptedRow[key].includes(':')) {
-                const originalValue = decryptedRow[key];
-                decryptedRow[key] = this.decrypt(originalValue);
-                if (decryptedRow[key] !== originalValue && !isNaN(Number(decryptedRow[key]))) {
-                    decryptedRow[key] = Number(decryptedRow[key]);
-                }
-            }
-        }
-        return decryptedRow;
+        return this.encryption.decryptFields(row);
     }
 
     async getDataByFilters(tableName, filters = {}, options = {}) {
@@ -473,8 +437,8 @@ class Database {
     }
 
     async insertUser(name, email) {
-        const encryptedName = this.encrypt(name);
-        const encryptedEmail = this.encrypt(email);
+        const encryptedName = this.encryption.encrypt(name);
+        const encryptedEmail = this.encryption.encrypt(email);
         return this.query('INSERT INTO users (name, email) VALUES (?, ?)', [encryptedName, encryptedEmail]);
     }
 

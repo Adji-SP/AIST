@@ -2,12 +2,9 @@
 // Collection-based like Firebase, compatible with existing framework
 
 const { MongoClient } = require('mongodb');
-const crypto = require('crypto');
 const alert = require('../alert');
 
-const ALGORITHM = 'aes-256-cbc';
-const SECRET_KEY = crypto.createHash('sha256').update(process.env.DB_ENCRYPTION_KEY || '').digest();
-const IV_LENGTH = 16;
+// Encryption logic moved to EncryptionService
 
 class CosmosQueryBuilder {
     constructor(database, collectionName) {
@@ -335,8 +332,13 @@ class CosmosQueryBuilder {
 }
 
 class CosmosDB {
-    constructor(config) {
+    constructor(config, encryptionService) {
+        if (!encryptionService) {
+            throw new Error('EncryptionService is required for CosmosDB');
+        }
+
         this.config = config;
+        this.encryption = encryptionService;
         this.client = null;
         this.db = null;
         this.isConnected = false;
@@ -402,62 +404,19 @@ class CosmosDB {
         }
     }
 
-    // Encryption methods (same as Firebase/MySQL)
-    encrypt(text) {
-        if (text === null || typeof text === 'undefined') return text;
-        const iv = crypto.randomBytes(IV_LENGTH);
-        const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
-        let encrypted = cipher.update(String(text), 'utf8', 'hex');
-        encrypted += cipher.final('hex');
-        return iv.toString('hex') + ':' + encrypted;
-    }
-
-    decrypt(encryptedText) {
-        if (typeof encryptedText !== 'string' || !encryptedText.includes(':')) {
-            return encryptedText;
-        }
-        try {
-            const textParts = encryptedText.split(':');
-            const iv = Buffer.from(textParts.shift(), 'hex');
-            const encryptedData = textParts.join(':');
-            const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
-            let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
-            decrypted += decipher.final('utf8');
-            return decrypted;
-        } catch (error) {
-            return encryptedText;
-        }
-    }
-
+    // Encryption methods delegated to EncryptionService
     _encryptData(data) {
-        const encryptedData = {};
-        for (const [key, value] of Object.entries(data)) {
-            const sensitiveFields = ['password', 'email', 'phone', 'address', 'name'];
-            if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
-                encryptedData[key] = this.encrypt(value);
-            } else {
-                encryptedData[key] = value;
-            }
-        }
-        return encryptedData;
+        return this.encryption.encryptFields(data);
     }
 
     _decryptRow(row) {
         if (!row || typeof row !== 'object') return row;
 
-        const decryptedRow = { ...row };
-        for (const key in decryptedRow) {
-            if (key === '_id') continue; // Skip MongoDB _id
+        // Skip MongoDB _id field during decryption
+        const { _id, ...dataToDecrypt } = row;
+        const decrypted = this.encryption.decryptFields(dataToDecrypt);
 
-            if (typeof decryptedRow[key] === 'string' && decryptedRow[key].includes(':')) {
-                const originalValue = decryptedRow[key];
-                decryptedRow[key] = this.decrypt(originalValue);
-                if (decryptedRow[key] !== originalValue && !isNaN(Number(decryptedRow[key]))) {
-                    decryptedRow[key] = Number(decryptedRow[key]);
-                }
-            }
-        }
-        return decryptedRow;
+        return { _id, ...decrypted };
     }
 
     // Legacy methods for backward compatibility with existing framework

@@ -4,38 +4,27 @@
 const Database = require('./mysqlDB');
 const FirebaseDB = require('./firebaseDB');
 const CosmosDB = require('./cosmosDB');
+const { TABLE_NAMES } = require('../../../config/constants');
 
 class DatabaseAdapter {
-    constructor() {
+    constructor(encryptionService, config = {}) {
+        if (!encryptionService) {
+            throw new Error('EncryptionService is required for DatabaseAdapter');
+        }
+
+        this.encryptionService = encryptionService;
         this.databases = new Map();
         this.primaryDb = null;
         this.secondaryDb = null;
         this.initialized = false;
         this.subscriptions = new Map();
 
-        // Configuration from environment
+        // Configuration passed from ConfigResolver
         this.config = {
-            type: process.env.DB_TYPE || 'mysql', // mysql, firestore, cosmosdb, hybrid
-            mysql: {
-                host: process.env.MYSQL_HOST || 'localhost',
-                port: parseInt(process.env.MYSQL_PORT) || 3306,
-                user: process.env.MYSQL_USER || 'root',
-                password: process.env.MYSQL_PASSWORD || '',
-                database: process.env.MYSQL_DATABASE || 'monitor_db',
-                connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10
-            },
-            firebase: {
-                projectId: process.env.FIREBASE_PROJECT_ID,
-                serviceAccountKey: process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
-                databaseURL: process.env.FIREBASE_DATABASE_URL,
-                useFirestore: process.env.USE_FIRESTORE !== 'false' // Default to Firestore
-            },
-            cosmosdb: {
-                connectionString: process.env.COSMOS_CONNECTION_STRING,
-                accountName: process.env.COSMOS_ACCOUNT_NAME,
-                accountKey: process.env.COSMOS_ACCOUNT_KEY,
-                database: process.env.COSMOS_DATABASE || 'monitor_db'
-            }
+            type: config.type || 'mysql',
+            mysql: config.mysql || {},
+            firebase: config.firebase || {},
+            cosmosdb: config.cosmosdb || {}
         };
     }
 
@@ -47,7 +36,7 @@ class DatabaseAdapter {
 
             // Initialize primary database
             if (this.config.type === 'mysql' || this.config.type === 'hybrid') {
-                this.databases.set('mysql', new Database(this.config.mysql));
+                this.databases.set('mysql', new Database(this.config.mysql, this.encryptionService));
                 await this.databases.get('mysql').connect();
                 this.primaryDb = this.databases.get('mysql');
                 console.log('✅ MySQL database connected');
@@ -55,7 +44,7 @@ class DatabaseAdapter {
 
             // Initialize Firebase/Firestore if enabled
             if (this.config.type === 'firestore' || this.config.type === 'hybrid') {
-                this.databases.set('firebase', new FirebaseDB(this.config.firebase));
+                this.databases.set('firebase', new FirebaseDB(this.config.firebase, this.encryptionService));
                 await this.databases.get('firebase').connect();
 
                 if (!this.primaryDb) {
@@ -67,7 +56,7 @@ class DatabaseAdapter {
 
             // Initialize Azure Cosmos DB if enabled
             if (this.config.type === 'cosmosdb' || this.config.type === 'hybrid-cosmos') {
-                this.databases.set('cosmosdb', new CosmosDB(this.config.cosmosdb));
+                this.databases.set('cosmosdb', new CosmosDB(this.config.cosmosdb, this.encryptionService));
                 await this.databases.get('cosmosdb').connect();
 
                 if (!this.primaryDb) {
@@ -238,11 +227,11 @@ class DatabaseAdapter {
 
     // Legacy method compatibility
     async getAllUsers() {
-        return await this.getDataByFilters('users');
+        return await this.getDataByFilters(TABLE_NAMES.USERS);
     }
 
     async insertUser(name, email) {
-        return await this.postData('users', { name, email });
+        return await this.postData(TABLE_NAMES.USERS, { name, email });
     }
 
     // Validation (forwarded to primary database)
@@ -252,19 +241,13 @@ class DatabaseAdapter {
         }
     }
 
-    // Encryption methods (forwarded to primary database)
+    // Encryption methods (delegated to EncryptionService)
     encrypt(text) {
-        if (this.primaryDb && this.primaryDb.encrypt) {
-            return this.primaryDb.encrypt(text);
-        }
-        return text;
+        return this.encryptionService.encrypt(text);
     }
 
     decrypt(encryptedText) {
-        if (this.primaryDb && this.primaryDb.decrypt) {
-            return this.primaryDb.decrypt(encryptedText);
-        }
-        return encryptedText;
+        return this.encryptionService.decrypt(encryptedText);
     }
 
     // Health check
@@ -412,9 +395,12 @@ let instance = null;
 
 module.exports = {
     DatabaseAdapter,
-    getInstance: () => {
+    getInstance: (encryptionService, config = {}) => {
         if (!instance) {
-            instance = new DatabaseAdapter();
+            if (!encryptionService) {
+                throw new Error('EncryptionService is required for first call to getInstance');
+            }
+            instance = new DatabaseAdapter(encryptionService, config);
         }
         return instance;
     },

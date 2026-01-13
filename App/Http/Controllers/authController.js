@@ -1,5 +1,9 @@
 const bcrypt = require('bcryptjs');
-let db;
+const DatabaseService = require('../../modules/lib/services/DatabaseService');
+const { getInstance: getLogger } = require('../../modules/lib/services/LoggingService');
+
+let databaseService;
+let logger;
 
 /**
  * Initializes the controller with a database instance.
@@ -7,7 +11,9 @@ let db;
  * @param {object} databaseInstance - The connected database instance.
  */
 function initializeController(databaseInstance) {
-    db = databaseInstance;
+    // Create DatabaseService facade
+    databaseService = new DatabaseService(databaseInstance);
+    logger = getLogger().child({ module: 'AuthController' });
 }
 
 /**
@@ -18,28 +24,30 @@ function initializeController(databaseInstance) {
 async function login(req, res) {
     const { username, password } = req.body;
 
-    db.validate(req.body, {
-        username: ['required'],
-        password: ['required']
-    });
     try {
-        const users = await db.getDataByFilters('users', { username });
+        logger.debug('Login attempt', { username });
+
+        // Use DatabaseService to find user
+        const users = await databaseService.find('users', { username });
         const user = users && users.length > 0 ? users[0] : null;
 
         if (!user) {
+            logger.warn('Login failed - user not found', { username });
             return res.status(401).json({ success: false, error: 'Invalid email or password.' });
         }
 
         const passwordIsValid = await bcrypt.compare(password, user.password);
 
         if (passwordIsValid) {
+            logger.info('Login successful', { username, userId: user.id });
             const { password, ...userWithoutPassword } = user;
             res.status(200).json({ success: true, user: userWithoutPassword });
         } else {
+            logger.warn('Login failed - invalid password', { username });
             res.status(401).json({ success: false, error: 'Invalid email or password.' });
         }
     } catch (error) {
-        console.error('Login error:', error);
+        logger.error('Login error', { username, error: error.message });
         res.status(500).json({ success: false, error: 'Internal server error during login.' });
     }
 }
@@ -52,17 +60,17 @@ async function login(req, res) {
 async function register(req, res) {
     const { username, password } = req.body;
 
-    db.validate(req.body, {
-        username: ['required'],
-        // email: ['required', 'email'],
-        password: ['required']
-    });
     try {
-        const existingUsers = await db.getDataByFilters('users', { username });
+        logger.debug('Registration attempt', { username });
+
+        // Check if user already exists
+        const existingUsers = await databaseService.find('users', { username });
         if (existingUsers && existingUsers.length > 0) {
+            logger.warn('Registration failed - user already exists', { username });
             return res.status(409).json({ success: false, error: 'User with this email already exists.' });
         }
 
+        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -72,11 +80,17 @@ async function register(req, res) {
             // role: 'user'
         };
 
-        const result = await db.postData('users', newUser);
-        res.status(201).json({ success: true, userId: result.insertId });
+        // Use DatabaseService to insert user
+        const result = await databaseService.insert('users', newUser, {
+            validate: false,
+            emit: true
+        });
+
+        logger.info('Registration successful', { username, userId: result.data.insertId });
+        res.status(201).json({ success: true, userId: result.data.insertId });
 
     } catch (error) {
-        console.error('Registration error:', error);
+        logger.error('Registration error', { username, error: error.message });
         res.status(500).json({ success: false, error: 'Internal server error during registration.' });
     }
 }

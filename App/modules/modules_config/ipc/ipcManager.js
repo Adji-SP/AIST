@@ -1,26 +1,45 @@
 // modules/ipc/ipcManager.js
 const { ipcMain } = require('electron');
-const alert = require('../../lib/alert');
+const { getInstance: getEventBus } = require('../../lib/events/EventBus');
+const { getInstance: getLogger } = require('../../lib/services/LoggingService');
+const DatabaseService = require('../../lib/services/DatabaseService');
+const alert = require('../../lib/alert'); // Keep for backward compatibility
+const { TABLE_NAMES, IPC_CHANNELS } = require('../../../config/constants');
 
 class IPCManager {
     constructor(database, serialManager) {
         this.database = database;
         this.serialManager = serialManager;
-        this.databaseAdapter = null; // NEW: Enhanced database adapter support
+        this.databaseAdapter = null; // Enhanced database adapter support
+
+        // Initialize new services
+        this.eventBus = getEventBus();
+        this.logger = getLogger().child({ module: 'IPCManager' });
+
+        // Create DatabaseService facade if database is available
+        if (database) {
+            this.databaseService = new DatabaseService(database);
+        }
     }
 
     setupHandlers() {
-        // NEW: Check if database has enhanced adapter support
+        this.logger.info('Setting up IPC handlers');
+
+        // Check if database has enhanced adapter support
         if (this.database && typeof this.database.getDatabaseAdapter === 'function') {
             this.databaseAdapter = this.database.getDatabaseAdapter();
+            this.logger.info('Enhanced database adapter mode enabled');
             alert.system.config('IPC', 'Enhanced database adapter mode enabled');
         }
 
         this.setupDatabaseHandlers();
         this.setupSerialHandlers();
-        this.setupEnhancedHandlers(); // NEW: Enhanced adapter handlers
-        this.setupMonitoringHandlers(); // NEW: Monitoring-specific handlers
+        this.setupEnhancedHandlers(); // Enhanced adapter handlers
+        this.setupMonitoringHandlers(); // Monitoring-specific handlers
+
+        this.logger.info('All IPC handlers configured successfully');
         alert.system.ready('IPC Manager - All handlers configured');
+        this.eventBus.emit('ipc:ready', this);
     }
 
     setupDatabaseHandlers() {
@@ -43,48 +62,69 @@ class IPCManager {
             }
         });
 
-        // Generic data handlers
+        // Generic data handlers - Using DatabaseService facade
         ipcMain.handle('post-data', async (event, table, data) => {
             try {
-                const result = await this.database.postData(table, data);
-                return { success: true, id: result.insertId };
+                this.logger.debug('IPC post-data', { table, data });
+                // Use DatabaseService for automatic validation and event emission
+                const result = await this.databaseService.insert(table, data, {
+                    validate: false, // IPC data already validated by client
+                    emit: true
+                });
+                return { success: true, id: result.data.insertId };
             } catch (err) {
+                this.logger.error('IPC post-data failed', { table, error: err.message });
                 return { success: false, error: err.message };
             }
         });
 
         ipcMain.handle('insert-data', async (event, table, data) => {
             try {
-                const result = await this.database.postData(table, data);
-                return { success: true, id: result.insertId };
+                this.logger.debug('IPC insert-data', { table, data });
+                // Use DatabaseService for automatic validation and event emission
+                const result = await this.databaseService.insert(table, data, {
+                    validate: false,
+                    emit: true
+                });
+                return { success: true, id: result.data.insertId };
             } catch (err) {
+                this.logger.error('IPC insert-data failed', { table, error: err.message });
                 return { success: false, error: err.message };
             }
         });
 
         ipcMain.handle('update-data', async (event, table, data, whereClause, whereParams) => {
             try {
-                const result = await this.database.updateData(table, data, whereClause, whereParams);
-                return { success: true, affectedRows: result.affectedRows };
+                this.logger.debug('IPC update-data', { table, whereClause });
+                // Use DatabaseService for automatic event emission
+                const result = await this.databaseService.update(table, data, whereClause, whereParams);
+                return { success: true, affectedRows: result.data.affectedRows };
             } catch (err) {
+                this.logger.error('IPC update-data failed', { table, error: err.message });
                 return { success: false, error: err.message };
             }
         });
 
         ipcMain.handle('delete-data', async (event, table, whereClause, whereParams) => {
             try {
-                const result = await this.database.deleteData(table, whereClause, whereParams);
-                return { success: true, affectedRows: result.affectedRows };
+                this.logger.debug('IPC delete-data', { table, whereClause });
+                // Use DatabaseService for automatic event emission
+                const result = await this.databaseService.delete(table, whereClause, whereParams);
+                return { success: true, affectedRows: result.data.affectedRows };
             } catch (err) {
+                this.logger.error('IPC delete-data failed', { table, error: err.message });
                 return { success: false, error: err.message };
             }
         });
 
         ipcMain.handle('get-data-by-filters', async (event, table, filters, options) => {
             try {
-                const result = await this.database.getDataByFilters(table, filters, options);
+                this.logger.debug('IPC get-data-by-filters', { table, filters, options });
+                // Use DatabaseService for consistent interface
+                const result = await this.databaseService.find(table, filters, options);
                 return { success: true, data: result };
             } catch (err) {
+                this.logger.error('IPC get-data-by-filters failed', { table, error: err.message });
                 alert.error('IPC', 'get-data-by-filters handler error', err);
                 return { success: false, error: err.message };
             }
@@ -290,7 +330,7 @@ class IPCManager {
         // Get temperature data
         ipcMain.handle('get-temperature-data', async (event, limit = 50) => {
             try {
-                const result = await this.database.getDataByFilters('temperature_data', {}, {
+                const result = await this.database.getDataByFilters(TABLE_NAMES.TEMPERATURE_DATA, {}, {
                     orderBy: 'timestamp',
                     orderDirection: 'DESC',
                     limit: limit
@@ -305,7 +345,7 @@ class IPCManager {
         // Get pressure data
         ipcMain.handle('get-pressure-data', async (event, limit = 50) => {
             try {
-                const result = await this.database.getDataByFilters('pressure_data', {}, {
+                const result = await this.database.getDataByFilters(TABLE_NAMES.PRESSURE_DATA, {}, {
                     orderBy: 'timestamp',
                     orderDirection: 'DESC',
                     limit: limit
@@ -320,7 +360,7 @@ class IPCManager {
         // Get record count
         ipcMain.handle('get-record-count', async (event, type) => {
             try {
-                const tableName = type === 'temperature' ? 'temperature_data' : 'pressure_data';
+                const tableName = type === 'temperature' ? TABLE_NAMES.TEMPERATURE_DATA : TABLE_NAMES.PRESSURE_DATA;
                 const result = await this.database.getDataByFilters(tableName, {}, { count: true });
                 return result.success ? result.data : 0;
             } catch (err) {
@@ -335,7 +375,7 @@ class IPCManager {
                 const { type, limit = 100 } = options;
 
                 if (type) {
-                    const tableName = type === 'temperature' ? 'temperature_data' : 'pressure_data';
+                    const tableName = type === 'temperature' ? TABLE_NAMES.TEMPERATURE_DATA : TABLE_NAMES.PRESSURE_DATA;
                     const result = await this.database.getDataByFilters(tableName, {}, {
                         orderBy: 'timestamp',
                         orderDirection: 'DESC',
@@ -344,12 +384,12 @@ class IPCManager {
                     return result.success ? result.data : [];
                 } else {
                     // Get mixed records from both tables
-                    const tempResult = await this.database.getDataByFilters('temperature_data', {}, {
+                    const tempResult = await this.database.getDataByFilters(TABLE_NAMES.TEMPERATURE_DATA, {}, {
                         orderBy: 'timestamp',
                         orderDirection: 'DESC',
                         limit: Math.floor(limit / 2)
                     });
-                    const pressureResult = await this.database.getDataByFilters('pressure_data', {}, {
+                    const pressureResult = await this.database.getDataByFilters(TABLE_NAMES.PRESSURE_DATA, {}, {
                         orderBy: 'timestamp',
                         orderDirection: 'DESC',
                         limit: Math.floor(limit / 2)
@@ -382,7 +422,7 @@ class IPCManager {
                 }
 
                 if (type) {
-                    const tableName = type === 'temperature' ? 'temperature_data' : 'pressure_data';
+                    const tableName = type === 'temperature' ? TABLE_NAMES.TEMPERATURE_DATA : TABLE_NAMES.PRESSURE_DATA;
                     const result = await this.database.getDataByFilters(tableName, whereConditions, {
                         orderBy: 'timestamp',
                         orderDirection: 'DESC'
@@ -390,11 +430,11 @@ class IPCManager {
                     return result.success ? result.data.map(item => ({ ...item, type })) : [];
                 } else {
                     // Get from both tables
-                    const tempResult = await this.database.getDataByFilters('temperature_data', whereConditions, {
+                    const tempResult = await this.database.getDataByFilters(TABLE_NAMES.TEMPERATURE_DATA, whereConditions, {
                         orderBy: 'timestamp',
                         orderDirection: 'DESC'
                     });
-                    const pressureResult = await this.database.getDataByFilters('pressure_data', whereConditions, {
+                    const pressureResult = await this.database.getDataByFilters(TABLE_NAMES.PRESSURE_DATA, whereConditions, {
                         orderBy: 'timestamp',
                         orderDirection: 'DESC'
                     });
@@ -413,7 +453,7 @@ class IPCManager {
         // Clear records
         ipcMain.handle('clear-records', async (event, type) => {
             try {
-                const tableName = type === 'temperature' ? 'temperature_data' : 'pressure_data';
+                const tableName = type === 'temperature' ? TABLE_NAMES.TEMPERATURE_DATA : TABLE_NAMES.PRESSURE_DATA;
                 const result = await this.database.deleteData(tableName, '1=1', []); // Clear all
                 return result.success;
             } catch (err) {
@@ -426,9 +466,9 @@ class IPCManager {
         ipcMain.handle('delete-record', async (event, id) => {
             try {
                 // Try both tables since we don't know which one
-                let result = await this.database.deleteData('temperature_data', 'id = ?', [id]);
+                let result = await this.database.deleteData(TABLE_NAMES.TEMPERATURE_DATA, 'id = ?', [id]);
                 if (!result.success || result.affectedRows === 0) {
-                    result = await this.database.deleteData('pressure_data', 'id = ?', [id]);
+                    result = await this.database.deleteData(TABLE_NAMES.PRESSURE_DATA, 'id = ?', [id]);
                 }
                 return result.success && result.affectedRows > 0;
             } catch (err) {
@@ -440,7 +480,7 @@ class IPCManager {
         // Insert temperature data
         ipcMain.handle('insert-temperature-data', async (event, data) => {
             try {
-                const result = await this.database.postData('temperature_data', {
+                const result = await this.database.postData(TABLE_NAMES.TEMPERATURE_DATA, {
                     ...data,
                     timestamp: new Date().toISOString()
                 });
@@ -454,7 +494,7 @@ class IPCManager {
         // Insert pressure data
         ipcMain.handle('insert-pressure-data', async (event, data) => {
             try {
-                const result = await this.database.postData('pressure_data', {
+                const result = await this.database.postData(TABLE_NAMES.PRESSURE_DATA, {
                     ...data,
                     timestamp: new Date().toISOString()
                 });

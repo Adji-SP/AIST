@@ -1,51 +1,64 @@
-let db;
+const DatabaseService = require('../../modules/lib/services/DatabaseService');
+const { getInstance: getLogger } = require('../../modules/lib/services/LoggingService');
+
+let databaseService;
+let logger;
+
 function initializeController(databaseInstance) {
-    db = databaseInstance;
+    // Create DatabaseService facade
+    databaseService = new DatabaseService(databaseInstance);
+    logger = getLogger().child({ module: 'DatabaseController' });
 }
 
 async function insertSensorData(req, res) {
     const { user_id, device_id, ph_reading, temperature_reading, moisture_percentage } = req.body;
 
     try {
-        dbInstance.validate(req.body, {
-            user_id: ['required'],
-            device_id: ['required']
-        });
+        logger.debug('Inserting sensor data', { user_id, device_id });
 
-        const result = await dbInstance.postData('sensor_data', {
+        // Use DatabaseService - handles validation and encryption automatically
+        const result = await databaseService.insert('sensor_data', {
             user_id,
             device_id,
-            ph_reading: dbInstance.encrypt(String(ph_reading)),
-            temperature_reading: dbInstance.encrypt(String(temperature_reading)),
-            moisture_percentage: dbInstance.encrypt(String(moisture_percentage))
+            ph_reading,
+            temperature_reading,
+            moisture_percentage
+        }, {
+            validate: false, // API validation handled separately if needed
+            emit: true // Emit event for real-time updates
         });
 
-        res.json({ success: true, id: result.insertId, message: "Data received via API and saved." });
+        logger.info('Sensor data inserted successfully', { insertId: result.data.insertId });
+        res.json({ success: true, id: result.data.insertId, message: "Data received via API and saved." });
     } catch (err) {
+        logger.error('Failed to insert sensor data', { error: err.message });
         res.status(400).json({ success: false, error: err.message });
     }
-};
+}
 
 async function insertPh(req, res) {
     const { user_id, device_id, ph_reading } = req.body;
 
     try {
-        dbInstance.validate(req.body, {
-            user_id: ['required'],
-            device_id: ['required']
-        });
+        logger.debug('Inserting pH data', { user_id, device_id });
 
-        const result = await dbInstance.postData('ph_data', {
+        // Use DatabaseService
+        const result = await databaseService.insert('ph_data', {
             user_id,
             device_id,
-            ph_reading: dbInstance.encrypt(String(ph_reading)),
+            ph_reading
+        }, {
+            validate: false,
+            emit: true
         });
 
-        res.json({ success: true, id: result.insertId, message: "Data received via API and saved." });
+        logger.info('pH data inserted successfully', { insertId: result.data.insertId });
+        res.json({ success: true, id: result.data.insertId, message: "Data received via API and saved." });
     } catch (err) {
+        logger.error('Failed to insert pH data', { error: err.message });
         res.status(400).json({ success: false, error: err.message });
     }
-};
+}
 
 module.exports = {
     initializeController,

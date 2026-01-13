@@ -1,6 +1,9 @@
 // SerialCommunicator.js
 const { SerialPort, ReadlineParser } = require('serialport');
-const alert = require('../alert');
+const { getInstance: getEventBus } = require('../events/EventBus');
+const { getInstance: getLogger } = require('../services/LoggingService');
+const DatabaseService = require('../services/DatabaseService');
+const alert = require('../alert'); // Keep for backward compatibility
 
 class SerialCommunicator {
     constructor(config, dbInstance, windowInstance) {
@@ -25,6 +28,19 @@ class SerialCommunicator {
         };
         this.db = dbInstance;
         this.mainWindow = windowInstance;
+
+        // Initialize new services
+        this.eventBus = getEventBus();
+        this.logger = getLogger().child({
+            module: 'SerialCommunicator',
+            port: config.portPath || 'auto',
+            baudRate: config.baudRate || 9600
+        });
+
+        // Create DatabaseService facade if database available
+        if (dbInstance) {
+            this.databaseService = new DatabaseService(dbInstance);
+        }
         this.arduinoPort = null;
         this.parser = null;
         this.isConnecting = false;
@@ -71,6 +87,11 @@ class SerialCommunicator {
     // Set connection state and notify renderer
     _setState(newState, message = '') {
         if (this.currentState !== newState) {
+            this.logger.debug('State transition', {
+                from: this.currentState,
+                to: newState,
+                message
+            });
             alert.debug('SERIAL', `State: ${this.currentState} -> ${newState}${message ? ': ' + message : ''}`);
             this.currentState = newState;
             this._sendToRenderer('serial-port-status', {
@@ -83,10 +104,12 @@ class SerialCommunicator {
 
     async connect() {
         if (this.isConnecting) {
+            this.logger.debug('Connection already in progress');
             alert.debug('SERIAL', 'Connection already in progress');
             return;
         }
 
+        this.logger.info('Initiating serial connection');
         this.isConnecting = true;
         this.isIntentionallyDisconnected = false;
         this._setState(this.connectionStates.CONNECTING, 'Initiating connection...');
@@ -565,41 +588,72 @@ class SerialCommunicator {
         }
     }
 
-    _saveToDatabase(dataForDb) {
-        let dataToInsert = { ...dataForDb };
+    async _saveToDatabase(dataForDb) {
+        try {
+            this.logger.debug('Saving data to database', {
+                table: this.config.dbTableName,
+                fields: Object.keys(dataForDb)
+            });
 
-        // Handle encryption if configured
-        if (this.db.encrypt && this.config.fieldsToEncrypt && this.config.fieldsToEncrypt.length > 0) {
-            console.log('Encrypting fields:', this.config.fieldsToEncrypt);
-            for (const field of this.config.fieldsToEncrypt) {
-                if (dataToInsert.hasOwnProperty(field) && dataToInsert[field] !== null && dataToInsert[field] !== undefined) {
-                    try {
-                        dataToInsert[field] = this.db.encrypt(String(dataToInsert[field]));
-                        console.log(`Field '${field}' encrypted.`);
-                    } catch (encError) {
-                        console.error(`Error encrypting field '${field}':`, encError);
-                        this._sendToRenderer('serial-port-error', `Encryption Error for ${field}: ${encError.message}`);
+            // Use DatabaseService if available, fallback to raw db
+            if (this.databaseService) {
+                // DatabaseService handles encryption and validation automatically
+                const result = await this.databaseService.insert(
+                    this.config.dbTableName,
+                    dataForDb,
+                    {
+                        validate: false, // Serial data already validated
+                        emit: true // Emit event for other modules
+                    }
+                );
+
+                this.logger.info('Data saved successfully', {
+                    table: this.config.dbTableName,
+                    insertId: result.data.insertId
+                });
+                alert.success('SERIAL', `Data saved to ${this.config.dbTableName} (ID: ${result.data.insertId})`);
+
+                this._sendToRenderer('database-insert-success', {
+                    table: this.config.dbTableName,
+                    insertId: result.data.insertId,
+                    data: dataForDb,
+                    port: this.currentPortPath
+                });
+            } else {
+                // Fallback to raw database if DatabaseService not available
+                let dataToInsert = { ...dataForDb };
+
+                // Handle encryption if configured
+                if (this.db.encrypt && this.config.fieldsToEncrypt && this.config.fieldsToEncrypt.length > 0) {
+                    for (const field of this.config.fieldsToEncrypt) {
+                        if (dataToInsert[field]) {
+                            dataToInsert[field] = this.db.encrypt(String(dataToInsert[field]));
+                        }
                     }
                 }
-            }
-        }
 
-        console.log('Data for DB (final):', dataToInsert);
-
-        this.db.postData(this.config.dbTableName, dataToInsert)
-            .then(res => {
+                const res = await this.db.postData(this.config.dbTableName, dataToInsert);
+                this.logger.info('Data saved successfully (raw db)', {
+                    table: this.config.dbTableName,
+                    insertId: res.insertId
+                });
                 alert.success('SERIAL', `Data saved to ${this.config.dbTableName} (ID: ${res.insertId})`);
+
                 this._sendToRenderer('database-insert-success', {
                     table: this.config.dbTableName,
                     insertId: res.insertId,
                     data: dataForDb,
                     port: this.currentPortPath
                 });
-            })
-            .catch(err => {
-                alert.serial.error(`Database insert to ${this.config.dbTableName}`, err);
-                this._sendToRenderer('serial-port-error', `DB Insert: ${err.message}`);
+            }
+        } catch (err) {
+            this.logger.error('Database save failed', {
+                table: this.config.dbTableName,
+                error: err.message
             });
+            alert.serial.error(`Database insert to ${this.config.dbTableName}`, err);
+            this._sendToRenderer('serial-port-error', `DB Insert: ${err.message}`);
+        }
     }
 
     // Method to send data to Arduino/ESP32

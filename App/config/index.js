@@ -51,6 +51,25 @@ class ConfigResolver {
     }
 
     /**
+     * Resolve all configurations at once (for dependency injection)
+     * @param {Object} overrides - Configuration overrides per module
+     * @returns {Object} Complete configuration object with all modules
+     */
+    resolveAll(overrides = {}) {
+        return {
+            database: this.getConfig('database', overrides.database),
+            api: this.getConfig('api', overrides.api),
+            websocket: this.getConfig('websocket', overrides.websocket),
+            serial: this.getConfig('serial', overrides.serial),
+            window: this.getConfig('window', overrides.window),
+            ipc: this.getConfig('ipc', overrides.ipc),
+            encryption: {
+                key: process.env.DB_ENCRYPTION_KEY
+            }
+        };
+    }
+
+    /**
      * Get configuration for a specific module
      * @param {string} moduleName - Name of the module (e.g., 'database', 'api')
      * @param {Object} overrides - Configuration overrides
@@ -83,15 +102,34 @@ class ConfigResolver {
         const defaults = {
             database: {
                 type: process.env.DB_TYPE || 'mysql',
-                host: process.env.DB_HOST || 'localhost',
-                port: process.env.DB_PORT || 3306,
-                name: process.env.DB_NAME || 'monitor',
-                user: process.env.DB_USER || 'root',
-                password: process.env.DB_PASSWORD || '',
-                connectionLimit: 10
+                mysql: {
+                    host: process.env.MYSQL_HOST || 'localhost',
+                    port: parseInt(process.env.MYSQL_PORT) || 3306,
+                    user: process.env.MYSQL_USER || 'root',
+                    password: process.env.MYSQL_PASSWORD || '',
+                    database: process.env.MYSQL_DATABASE || 'monitor_db',
+                    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10
+                },
+                firebase: {
+                    projectId: process.env.FIREBASE_PROJECT_ID,
+                    serviceAccountKey: process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+                    databaseURL: process.env.FIREBASE_DATABASE_URL,
+                    apiKey: process.env.FIREBASE_API_KEY,
+                    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+                    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+                    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+                    appId: process.env.FIREBASE_APP_ID,
+                    useFirestore: process.env.USE_FIRESTORE !== 'false'
+                },
+                cosmosdb: {
+                    connectionString: process.env.COSMOS_CONNECTION_STRING,
+                    accountName: process.env.COSMOS_ACCOUNT_NAME,
+                    accountKey: process.env.COSMOS_ACCOUNT_KEY,
+                    database: process.env.COSMOS_DATABASE || 'monitor_db'
+                }
             },
             api: {
-                port: process.env.API_PORT || 3001,
+                port: parseInt(process.env.API_PORT) || 3001,
                 host: process.env.API_HOST || 'localhost',
                 cors: true,
                 rateLimit: {
@@ -100,14 +138,27 @@ class ConfigResolver {
                 }
             },
             websocket: {
-                port: process.env.WS_PORT || 3002,
-                path: '/socket.io'
+                port: parseInt(process.env.WEBSOCKET_PORT) || 8080,
+                path: '/socket.io',
+                enableAuth: process.env.WEBSOCKET_ENABLE_AUTH === 'true',
+                enableHeartbeat: process.env.WEBSOCKET_ENABLE_HEARTBEAT !== 'false',
+                maxConnections: parseInt(process.env.WEBSOCKET_MAX_CONNECTIONS) || 100
             },
             serial: {
-                baudRate: 9600,
-                dataBits: 8,
-                parity: 'none',
-                stopBits: 1
+                port: process.env.SERIAL_PORT,
+                baudRate: parseInt(process.env.SERIAL_BAUDRATE) || 9600,
+                dataBits: parseInt(process.env.SERIAL_DATA_BITS) || 8,
+                parity: process.env.SERIAL_PARITY || 'none',
+                stopBits: parseInt(process.env.SERIAL_STOP_BITS) || 1,
+                autoOpen: process.env.SERIAL_AUTO_OPEN !== 'false'
+            },
+            window: {
+                width: parseInt(process.env.WINDOW_WIDTH) || 1280,
+                height: parseInt(process.env.WINDOW_HEIGHT) || 800,
+                entryPoint: process.env.FRONTEND_ENTRY_POINT
+            },
+            ipc: {
+                // IPC configuration (if needed in future)
             }
         };
 

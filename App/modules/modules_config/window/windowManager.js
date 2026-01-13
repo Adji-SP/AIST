@@ -2,12 +2,39 @@
 const { BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const alert = require('../../lib/alert');
+const LifecycleManager = require('../../lib/base/LifecycleManager');
+const { getInstance: getEventBus } = require('../../lib/events/EventBus');
+const { getInstance: getLogger } = require('../../lib/services/LoggingService');
+const alert = require('../../lib/alert'); // Keep for backward compatibility
 
-class WindowManager {
-    constructor() {
+class WindowManager extends LifecycleManager {
+    constructor(config = {}) {
+        super('WindowManager');
+
         this.mainWindow = null;
-        this.useReactFrontend = process.env.USE_REACT_FRONTEND === 'true';
+        this.config = config;
+        this.useReactFrontend = config.useReactFrontend || process.env.USE_REACT_FRONTEND === 'true';
+
+        // Initialize new services
+        this.eventBus = getEventBus();
+        this.logger = getLogger().child({ module: 'WindowManager', frontend: this.useReactFrontend ? 'React' : 'HTML' });
+    }
+
+    // Override LifecycleManager method
+    async _doInitialize() {
+        this.logger.info('Creating main window', { frontend: this.useReactFrontend ? 'React' : 'HTML' });
+        this.createWindow();
+        this.eventBus.emit('window:ready', this);
+    }
+
+    // Override LifecycleManager method
+    async _doShutdown() {
+        if (this.mainWindow) {
+            this.logger.info('Closing main window');
+            this.mainWindow.close();
+            this.mainWindow = null;
+            this.eventBus.emit('window:closed', this);
+        }
     }
 
     createWindow() {
@@ -51,11 +78,13 @@ class WindowManager {
             const reactBuildPath = path.join(__dirname, '../../frontend/build/index.html');
             if (fs.existsSync(reactBuildPath)) {
                 this.mainWindow.loadFile(reactBuildPath);
+                this.logger.info('Loading React frontend from build');
                 console.log('✅ Loading React frontend from build');
             } else {
                 // Development mode - connect to React dev server
                 const reactDevUrl = process.env.REACT_DEV_URL || 'http://localhost:3000';
                 this.mainWindow.loadURL(reactDevUrl);
+                this.logger.info('Loading React frontend from dev server', { url: reactDevUrl });
                 console.log(`⚡ Loading React frontend from dev server: ${reactDevUrl}`);
             }
         } else {
@@ -63,8 +92,10 @@ class WindowManager {
             const htmlPath = path.join(__dirname, '../../resource', 'view', 'layout', 'index.html');
             if (fs.existsSync(htmlPath)) {
                 this.mainWindow.loadFile(htmlPath);
+                this.logger.info('Loading traditional HTML frontend');
                 console.log('✅ Loading traditional HTML frontend');
             } else {
+                this.logger.warn('HTML frontend not found, creating fallback');
                 console.error('❌ HTML frontend not found, creating fallback');
                 this.createFallbackHTML();
             }
@@ -132,7 +163,9 @@ class WindowManager {
             this.loadAppropriateUI();
         }
         
-        console.log(`Frontend switched to: ${this.useReactFrontend ? 'React' : 'HTML'}`);
+        const frontendType = this.useReactFrontend ? 'React' : 'HTML';
+        this.logger.info('Frontend switched', { frontend: frontendType });
+        console.log(`Frontend switched to: ${frontendType}`);
         return this.useReactFrontend;
     }
 

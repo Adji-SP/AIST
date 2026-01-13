@@ -188,7 +188,11 @@ const KasturiOverview = () => {
         console.log('Firestore data updates automatically via real-time listeners');
     };
 
-    const lastUpdated = new Date(sensorData[0]?.timestamp || new Date());
+    const lastUpdated = sensorData[0]?.timestamp?.toDate
+        ? sensorData[0].timestamp.toDate()
+        : sensorData[0]?.timestamp
+            ? new Date(sensorData[0].timestamp)
+            : new Date();
     const [devices, setDevices] = useState([]);
     const [plantData, setPlantData] = useState(null);
     const [productionData, setProductionData] = useState(null);

@@ -2,20 +2,30 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const alert = require('../../lib/alert');
+const LifecycleManager = require('../../lib/base/LifecycleManager');
+const { getInstance: getEventBus } = require('../../lib/events/EventBus');
+const { getInstance: getLogger } = require('../../lib/services/LoggingService');
+const alert = require('../../lib/alert'); // Keep for backward compatibility
 
 // Controllers
 const dbController = require('../../../Http/Controllers/databaseController');
 const authController = require('../../../Http/Controllers/authController');
 const mauiController = require('../../../Http/Controllers/mauiController');
 
-class APIServer {
-    constructor(database) {
+class APIServer extends LifecycleManager {
+    constructor(database, config = {}) {
+        super('APIServer');
+
         this.app = express();
         this.database = database;
+        this.config = config;
         this.server = null;
-        this.port = process.env.API_PORT || 3001;
-        
+        this.port = config.port || 3001;
+
+        // Initialize new services
+        this.eventBus = getEventBus();
+        this.logger = getLogger().child({ module: 'APIServer', port: this.port });
+
         this.setupMiddleware();
         this.setupRoutes();
         this.initializeControllers();
@@ -62,21 +72,51 @@ class APIServer {
         */
     }
 
-    start() {
-        this.server = this.app.listen(this.port, () => {
-            alert.api.serverStarted(this.port);
+    // Override LifecycleManager method
+    async _doInitialize() {
+        return new Promise((resolve, reject) => {
+            try {
+                this.logger.info('Starting API server', { port: this.port });
+                this.server = this.app.listen(this.port, () => {
+                    this.logger.info('API server started successfully', { port: this.port });
+                    alert.api.serverStarted(this.port);
+                    this.eventBus.emit('api:started', { port: this.port, server: this });
+                    resolve();
+                });
+
+                this.server.on('error', (error) => {
+                    this.logger.error('API server error', { error: error.message });
+                    this.eventBus.emit('api:error', error);
+                    reject(error);
+                });
+            } catch (error) {
+                this.logger.error('Failed to start API server', { error: error.message });
+                reject(error);
+            }
         });
     }
 
-    async stop() {
+    // Override LifecycleManager method
+    async _doShutdown() {
         if (this.server) {
             return new Promise((resolve) => {
+                this.logger.info('Stopping API server');
                 this.server.close(() => {
-                    console.log('API server stopped');
+                    this.logger.info('API server stopped successfully');
+                    this.eventBus.emit('api:stopped', this);
                     resolve();
                 });
             });
         }
+    }
+
+    // Keep legacy start/stop methods for backward compatibility
+    start() {
+        return this.initialize();
+    }
+
+    async stop() {
+        return this.shutdown();
     }
 
     getApp() {

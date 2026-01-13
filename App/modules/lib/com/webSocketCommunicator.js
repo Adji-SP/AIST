@@ -1,10 +1,25 @@
 // WebSocketHandler.js - Enhanced with database sync capabilities
 const WebSocket = require('ws');
 const crypto = require('crypto');
-const alert = require('../alert');
+const { getInstance: getEventBus } = require('../events/EventBus');
+const { getInstance: getLogger } = require('../services/LoggingService');
+const DatabaseService = require('../services/DatabaseService');
+const alert = require('../alert'); // Keep for backward compatibility
 
 class WebSocketHandler {
     constructor(config, dbInstance, windowInstance) {
+        // Initialize new services first
+        this.eventBus = getEventBus();
+        this.logger = getLogger().child({
+            module: 'WebSocketHandler',
+            port: config.port || 8080
+        });
+
+        // Create DatabaseService facade if database available
+        if (dbInstance) {
+            this.databaseService = new DatabaseService(dbInstance);
+        }
+
         this.config = {
             port: 8080,
             host: '0.0.0.0',
@@ -433,24 +448,36 @@ class WebSocketHandler {
     // Save data to database
     async _saveToDatabase(data, ws, clientData) {
         try {
-            let dataToInsert = { ...data };
+            // Use DatabaseService if available, fallback to raw db
+            let result;
+            if (this.databaseService) {
+                // DatabaseService handles encryption and validation automatically
+                const dbResult = await this.databaseService.insert(
+                    this.config.dbTableName,
+                    data,
+                    {
+                        validate: false, // WebSocket data already validated
+                        emit: true // Emit event for other modules
+                    }
+                );
+                result = dbResult.data;
+            } else {
+                // Fallback to raw database
+                let dataToInsert = { ...data };
 
-            // Handle encryption if configured
-            if (this.db.encrypt && this.config.fieldsToEncrypt && this.config.fieldsToEncrypt.length > 0) {
-                for (const field of this.config.fieldsToEncrypt) {
-                    if (dataToInsert.hasOwnProperty(field) && dataToInsert[field] !== null && dataToInsert[field] !== undefined) {
-                        try {
+                // Handle encryption if configured
+                if (this.db.encrypt && this.config.fieldsToEncrypt && this.config.fieldsToEncrypt.length > 0) {
+                    for (const field of this.config.fieldsToEncrypt) {
+                        if (dataToInsert[field]) {
                             dataToInsert[field] = this.db.encrypt(String(dataToInsert[field]));
                             this._log('debug', `Field '${field}' encrypted`);
-                        } catch (encError) {
-                            this._log('error', `Error encrypting field '${field}': ${encError.message}`);
                         }
                     }
                 }
+
+                result = await this.db.postData(this.config.dbTableName, dataToInsert);
             }
 
-            const result = await this.db.postData(this.config.dbTableName, dataToInsert);
-            
             this._log('info', `Data saved to database (${this.config.dbTableName}): ID ${result.insertId}`);
 
             // Send success response to client
@@ -600,7 +627,17 @@ class WebSocketHandler {
                 return;
             }
 
-            const result = await this.db.postData(table, data);
+            // Use DatabaseService if available, fallback to raw db
+            let result;
+            if (this.databaseService) {
+                const dbResult = await this.databaseService.insert(table, data, {
+                    validate: false,
+                    emit: true
+                });
+                result = dbResult.data;
+            } else {
+                result = await this.db.postData(table, data);
+            }
             
             this._sendToClient(ws, {
                 type: 'db_create_response',
@@ -958,24 +995,27 @@ class WebSocketHandler {
     }
 
     _log(level, message, data = null) {
-        // Use the new alert system with proper categorization
-        const fullMessage = data ? `${message} - ${JSON.stringify(data)}` : message;
-        
+        // Use LoggingService for structured logging
         switch (level) {
             case 'debug':
-                alert.debug('WEBSOCKET', fullMessage);
+                this.logger.debug(message, data || {});
+                alert.debug('WEBSOCKET', data ? `${message} - ${JSON.stringify(data)}` : message);
                 break;
             case 'info':
-                alert.info('WEBSOCKET', fullMessage);
+                this.logger.info(message, data || {});
+                alert.info('WEBSOCKET', data ? `${message} - ${JSON.stringify(data)}` : message);
                 break;
             case 'warn':
-                alert.warning('WEBSOCKET', fullMessage);
+                this.logger.warn(message, data || {});
+                alert.warning('WEBSOCKET', data ? `${message} - ${JSON.stringify(data)}` : message);
                 break;
             case 'error':
-                alert.error('WEBSOCKET', fullMessage);
+                this.logger.error(message, data || {});
+                alert.error('WEBSOCKET', data ? `${message} - ${JSON.stringify(data)}` : message);
                 break;
             default:
-                alert.info('WEBSOCKET', fullMessage);
+                this.logger.info(message, data || {});
+                alert.info('WEBSOCKET', data ? `${message} - ${JSON.stringify(data)}` : message);
         }
     }
 

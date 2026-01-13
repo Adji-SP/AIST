@@ -191,7 +191,11 @@ const NipisOverview = () => {
         // The data updates automatically. This is just for UI compatibility.
         console.log('🔄 Firestore data updates automatically via real-time listeners');
     };
-    const lastUpdated = new Date(sensorData[0]?.timestamp || new Date());
+    const lastUpdated = sensorData[0]?.timestamp?.toDate
+        ? sensorData[0].timestamp.toDate()
+        : sensorData[0]?.timestamp
+            ? new Date(sensorData[0].timestamp)
+            : new Date();
 
     // Use Firestore alerts directly instead of API
     const [alerts, setAlerts] = useState(alertsData.data || []);

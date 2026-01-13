@@ -9,7 +9,11 @@
  */
 
 const path = require('path');
-const EventEmitter = require('events');
+
+// Import configuration and constants
+const configResolver = require('./config');
+const { EVENTS } = require('./config/constants');
+const { getInstance: getEventBus } = require('./modules/lib/events/EventBus');
 
 // Import modular components
 const DatabaseManager = require('./modules/modules_config/database/databaseManager');
@@ -17,13 +21,17 @@ const APIServer = require('./modules/modules_config/api/apiServer');
 const SerialManager = require('./modules/modules_config/serial/serialManager');
 const IPCManager = require('./modules/modules_config/ipc/ipcManager');
 const WebsocketManager = require('./modules/modules_config/websocket/websocketManager');
+const EncryptionService = require('./modules/lib/security/EncryptionService');
 
-class AppBootstrap extends EventEmitter {
+class AppBootstrap {
     constructor() {
-        super();
         this.initialized = false;
         this.mode = null;
         this.config = {};
+        this.eventBus = getEventBus(); // Use centralized EventBus
+
+        // Cross-cutting services
+        this.encryptionService = null;
 
         // Module instances
         this.databaseManager = null;
@@ -65,10 +73,16 @@ class AppBootstrap extends EventEmitter {
         } = options;
 
         this.mode = mode;
-        this.config = config;
+
+        // Resolve all configurations from environment and config files
+        console.log('[Bootstrap] Resolving configurations...');
+        this.config = configResolver.resolveAll(config);
 
         try {
             console.log(`[Bootstrap] Initializing backend in ${mode} mode...`);
+
+            // Initialize cross-cutting services first
+            this.initializeEncryptionService();
 
             // Initialize modules based on configuration
             if (modules.database) {
@@ -96,22 +110,29 @@ class AppBootstrap extends EventEmitter {
             }
 
             this.initialized = true;
-            this.emit('ready');
+            this.eventBus.emit(EVENTS.READY);
             console.log('[Bootstrap] Backend initialized successfully');
 
             return this;
         } catch (error) {
             console.error('[Bootstrap] Failed to initialize backend:', error);
-            this.emit('error', error);
+            this.eventBus.emit(EVENTS.ERROR, error);
             throw error;
         }
     }
 
+    initializeEncryptionService() {
+        console.log('[Bootstrap] Initializing encryption service...');
+        const encryptionKey = this.config.encryption.key;
+        this.encryptionService = new EncryptionService(encryptionKey);
+        this.eventBus.emit(EVENTS.ENCRYPTION_READY, this.encryptionService);
+    }
+
     async initializeDatabase() {
         console.log('[Bootstrap] Initializing database...');
-        this.databaseManager = new DatabaseManager();
+        this.databaseManager = new DatabaseManager(this.encryptionService, this.config.database);
         await this.databaseManager.initialize();
-        this.emit('database:ready', this.databaseManager);
+        this.eventBus.emit(EVENTS.DATABASE_READY, this.databaseManager);
     }
 
     async initializeWindow(electron) {
@@ -127,19 +148,19 @@ class AppBootstrap extends EventEmitter {
             this.windowManager.createWindow();
         }
 
-        this.emit('window:ready', this.windowManager);
+        this.eventBus.emit(EVENTS.WINDOW_READY, this.windowManager);
     }
 
     async initializeAPI() {
         console.log('[Bootstrap] Initializing API server...');
         const db = this.databaseManager ? this.databaseManager.getDatabase() : null;
-        this.apiServer = new APIServer(db);
+        this.apiServer = new APIServer(db, this.config.api);
 
         if (this.mode !== 'serverless') {
             await this.apiServer.start();
         }
 
-        this.emit('api:ready', this.apiServer);
+        this.eventBus.emit(EVENTS.API_READY, this.apiServer);
     }
 
     async initializeSerial() {
@@ -147,9 +168,9 @@ class AppBootstrap extends EventEmitter {
         const db = this.databaseManager ? this.databaseManager.getDatabase() : null;
         const window = this.windowManager ? this.windowManager.getMainWindow() : null;
 
-        this.serialManager = new SerialManager(db, window);
+        this.serialManager = new SerialManager(db, window, this.config.serial);
         await this.serialManager.initialize();
-        this.emit('serial:ready', this.serialManager);
+        this.eventBus.emit(EVENTS.SERIAL_READY, this.serialManager);
     }
 
     async initializeWebsocket() {
@@ -157,9 +178,9 @@ class AppBootstrap extends EventEmitter {
         const db = this.databaseManager ? this.databaseManager.getDatabase() : null;
         const window = this.windowManager ? this.windowManager.getMainWindow() : null;
 
-        this.websocketManager = new WebsocketManager(db, window);
+        this.websocketManager = new WebsocketManager(db, window, this.config.websocket);
         await this.websocketManager.initialize();
-        this.emit('websocket:ready', this.websocketManager);
+        this.eventBus.emit(EVENTS.WEBSOCKET_READY, this.websocketManager);
     }
 
     async initializeIPC() {
@@ -168,35 +189,74 @@ class AppBootstrap extends EventEmitter {
 
         this.ipcManager = new IPCManager(db, this.serialManager);
         this.ipcManager.setupHandlers();
-        this.emit('ipc:ready', this.ipcManager);
+        this.eventBus.emit(EVENTS.IPC_READY, this.ipcManager);
     }
 
     /**
-     * Cleanup and shutdown all modules
+     * Cleanup and shutdown all modules (graceful shutdown)
+     * @param {Object} options - Shutdown options
+     * @returns {Promise<void>}
      */
-    async shutdown() {
+    async shutdown(options = {}) {
+        const { timeout = 30000, force = false } = options;
+
+        if (!this.initialized) {
+            console.log('[Bootstrap] Backend already shutdown');
+            return;
+        }
+
         console.log('[Bootstrap] Shutting down backend...');
+        const shutdownStart = Date.now();
 
         try {
-            if (this.serialManager) {
-                await this.serialManager.close();
-            }
-            if (this.websocketManager && this.websocketManager.close) {
-                await this.websocketManager.close();
-            }
-            if (this.apiServer) {
-                await this.apiServer.stop();
-            }
-            if (this.databaseManager) {
-                await this.databaseManager.close();
+            // Create shutdown timeout
+            const shutdownPromise = this._performShutdown();
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Shutdown timeout')), timeout);
+            });
+
+            if (force) {
+                await shutdownPromise;
+            } else {
+                await Promise.race([shutdownPromise, timeoutPromise]);
             }
 
             this.initialized = false;
-            this.emit('shutdown');
-            console.log('[Bootstrap] Backend shutdown complete');
+            this.eventBus.emit(EVENTS.SHUTDOWN);
+
+            const duration = Date.now() - shutdownStart;
+            console.log(`[Bootstrap] Backend shutdown complete (${duration}ms)`);
         } catch (error) {
             console.error('[Bootstrap] Error during shutdown:', error);
+            if (!force) {
+                console.warn('[Bootstrap] Use shutdown({ force: true }) to force shutdown');
+            }
             throw error;
+        }
+    }
+
+    /**
+     * Perform the actual shutdown
+     * @private
+     */
+    async _performShutdown() {
+        const shutdownOrder = [
+            { name: 'Serial', manager: this.serialManager, method: 'close' },
+            { name: 'WebSocket', manager: this.websocketManager, method: 'close' },
+            { name: 'API', manager: this.apiServer, method: 'stop' },
+            { name: 'Database', manager: this.databaseManager, method: 'close' }
+        ];
+
+        for (const { name, manager, method } of shutdownOrder) {
+            if (manager && manager[method]) {
+                try {
+                    console.log(`[Bootstrap] Shutting down ${name}...`);
+                    await manager[method]();
+                } catch (error) {
+                    console.error(`[Bootstrap] Error shutting down ${name}:`, error.message);
+                    // Continue with other shutdowns even if one fails
+                }
+            }
         }
     }
 
@@ -228,6 +288,43 @@ class AppBootstrap extends EventEmitter {
      */
     getMode() {
         return this.mode;
+    }
+
+    /**
+     * Get the EventBus instance
+     * @returns {EventBus} EventBus instance
+     */
+    getEventBus() {
+        return this.eventBus;
+    }
+
+    /**
+     * Subscribe to a bootstrap event
+     * @param {string} eventName - Event name (use constants from EVENTS)
+     * @param {Function} handler - Event handler
+     * @returns {string} Subscription ID
+     */
+    on(eventName, handler) {
+        return this.eventBus.on(eventName, handler);
+    }
+
+    /**
+     * Subscribe to a bootstrap event (one-time)
+     * @param {string} eventName - Event name (use constants from EVENTS)
+     * @param {Function} handler - Event handler
+     * @returns {string} Subscription ID
+     */
+    once(eventName, handler) {
+        return this.eventBus.once(eventName, handler);
+    }
+
+    /**
+     * Unsubscribe from a bootstrap event
+     * @param {string} eventName - Event name
+     * @param {Function|string} handlerOrId - Handler function or subscription ID
+     */
+    off(eventName, handlerOrId) {
+        this.eventBus.off(eventName, handlerOrId);
     }
 }
 

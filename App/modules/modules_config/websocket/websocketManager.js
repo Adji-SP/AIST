@@ -1,39 +1,35 @@
+const LifecycleManager = require('../../lib/base/LifecycleManager');
+const { getInstance: getEventBus } = require('../../lib/events/EventBus');
+const { getInstance: getLogger } = require('../../lib/services/LoggingService');
 const WebSocketHandler = require('../../lib/com/webSocketCommunicator');
-const alert = require('../../lib/alert');
+const alert = require('../../lib/alert'); // Keep for backward compatibility
 
-class WebsocketManager {
-    constructor(database, mainWindow) {
+class WebsocketManager extends LifecycleManager {
+    constructor(database, mainWindow, config = {}) {
+        super('WebSocketManager');
+
         this.database = database;
         this.mainWindow = mainWindow;
         this.websocketHandler = null;
-        this.config = this.getWebsocketConfig();
-        this.databaseAdapter = null; // NEW: Enhanced database adapter support
+        this.config = config;
+        this.databaseAdapter = null; // Enhanced database adapter support
+
+        // Initialize new services
+        this.eventBus = getEventBus();
+        const mode = this.mainWindow ? 'Electron' : 'Server';
+        this.logger = getLogger().child({ module: 'WebSocketManager', mode, port: config.port || 8080 });
     }
 
-    getWebsocketConfig() {
-        return {
-            port: process.env.WEBSOCKET_PORT || 8080,
-            host: process.env.WEBSOCKET_HOST || '0.0.0.0',
-            enableAuthentication: process.env.WEBSOCKET_ENABLE_AUTH === 'true',
-            authToken: process.env.WEBSOCKET_AUTH_TOKEN || null,
-            dbTableName: process.env.WEBSOCKET_DB_TABLE_NAME || 'sensors_data',
-            requiredFields: process.env.WEBSOCKET_REQUIRED_FIELDS ?
-                process.env.WEBSOCKET_REQUIRED_FIELDS.split(',') : [],
-            fieldsToEncrypt: process.env.WEBSOCKET_FIELDS_TO_ENCRYPT ?
-                process.env.WEBSOCKET_FIELDS_TO_ENCRYPT.split(',') : [],
-            enableHeartbeat: process.env.WEBSOCKET_ENABLE_HEARTBEAT !== 'false',
-            heartbeatInterval: parseInt(process.env.WEBSOCKET_HEARTBEAT_INTERVAL) || 30000,
-            maxConnections: parseInt(process.env.WEBSOCKET_MAX_CONNECTIONS) || 10,
-            enableDataValidation: process.env.WEBSOCKET_ENABLE_VALIDATION !== 'false',
-            logLevel: process.env.WEBSOCKET_LOG_LEVEL || 'info'
-        };
-    }
-
-    async initialize() {
+    // Override LifecycleManager method
+    async _doInitialize() {
         try {
-            // NEW: Check if database has enhanced adapter support
+            const mode = this.mainWindow ? 'Electron' : 'Server';
+            this.logger.info('Initializing WebSocket manager', { mode, port: this.config.port || 8080 });
+
+            // Check if database has enhanced adapter support
             if (this.database && typeof this.database.getDatabaseAdapter === 'function') {
                 this.databaseAdapter = this.database.getDatabaseAdapter();
+                this.logger.info('Enhanced database adapter mode enabled');
                 alert.system.config('WebSocket', 'Enhanced database adapter mode enabled');
             }
 
@@ -50,12 +46,35 @@ class WebsocketManager {
                 await this.websocketHandler.start();
             }, delay);
 
-            const mode = this.mainWindow ? 'Electron' : 'Server';
+            this.logger.info('WebSocket manager initialized successfully', { mode });
             alert.system.ready(`WebSocket Manager (${mode} mode)`);
+            this.eventBus.emit('websocket:ready', this);
         } catch (error) {
+            this.logger.error('WebSocket manager initialization failed', { error: error.message });
             alert.error('WEBSOCKET', 'Manager initialization failed', error);
+            this.eventBus.emit('websocket:error', error);
             throw error;
         }
+    }
+
+    // Override LifecycleManager method
+    async _doShutdown() {
+        if (this.websocketHandler) {
+            try {
+                this.logger.info('Shutting down WebSocket handler');
+                await this.websocketHandler.stop();
+                this.logger.info('WebSocket handler stopped successfully');
+                this.eventBus.emit('websocket:closed', this);
+            } catch (error) {
+                this.logger.error('Error stopping WebSocket handler', { error: error.message });
+                throw error;
+            }
+        }
+    }
+
+    // Keep legacy initialize method for backward compatibility
+    async initialize() {
+        return super.initialize();
     }
 
     getStatus() {
