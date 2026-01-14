@@ -59,8 +59,18 @@ async function genericDataHandler(req, res) {
     for (let index = 0; index < records.length; index++) {
         const record = records[index];
         try {
-            // The postData function is now driven entirely by the API request.
-            const result = await db.postData(tableName, record);
+            // FIX: API Mismatch - handle both DatabaseService (.insert) and raw adapter (.postData)
+            let result;
+            if (db.insert && typeof db.insert === 'function') {
+                // It's DatabaseService - use .insert() which returns { success: true, data: { insertId: ... } }
+                const serviceResult = await db.insert(tableName, record, { validate: false, emit: false });
+                result = serviceResult.data; // Extract the data portion
+            } else if (db.postData && typeof db.postData === 'function') {
+                // It's raw adapter - use .postData() which returns { insertId: ... }
+                result = await db.postData(tableName, record);
+            } else {
+                throw new Error('Database instance has no insert or postData method');
+            }
             insertedIds.push(result.insertId);
         } catch (err) {
             errors.push({ index: index, record: record, error: err.message });

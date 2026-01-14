@@ -37,9 +37,16 @@ class SerialCommunicator {
             baudRate: config.baudRate || 9600
         });
 
+        // FIX: Prevent Double-Wrapping
         // Create DatabaseService facade if database available
         if (dbInstance) {
-            this.databaseService = new DatabaseService(dbInstance);
+            if (dbInstance.insert && dbInstance.find && typeof dbInstance.insert === 'function') {
+                // It's already a DatabaseService
+                this.databaseService = dbInstance;
+            } else {
+                // It's a raw database adapter, wrap it
+                this.databaseService = new DatabaseService(dbInstance);
+            }
         }
         this.arduinoPort = null;
         this.parser = null;

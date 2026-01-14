@@ -10,8 +10,9 @@ const databaseController = require('./Controllers/databaseController');
  */
 module.exports = function registerRoutes(app, db) {
     // Inject DB into controllers if needed
-    authController.init(db); 
-    mauiController.init(db);
+    // FIX: Method name mismatch - controllers export .initializeController(), not .init()
+    authController.initializeController(db);
+    mauiController.initializeController(db);
     databaseController.initializeController(db);
 
     // Define Routes

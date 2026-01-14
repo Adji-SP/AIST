@@ -8,11 +8,18 @@ let logger;
 /**
  * Initializes the controller with a database instance.
  * This must be called once when the application starts.
- * @param {object} databaseInstance - The connected database instance.
+ * @param {object} databaseInstance - The connected database instance or DatabaseService.
  */
 function initializeController(databaseInstance) {
-    // Create DatabaseService facade
-    databaseService = new DatabaseService(databaseInstance);
+    // FIX: Prevent Double-Wrapping
+    // Check if it's already a DatabaseService (has .insert and .find methods)
+    if (databaseInstance.insert && databaseInstance.find && typeof databaseInstance.insert === 'function') {
+        // It's already a DatabaseService
+        databaseService = databaseInstance;
+    } else {
+        // It's a raw database adapter, wrap it
+        databaseService = new DatabaseService(databaseInstance);
+    }
     logger = getLogger().child({ module: 'AuthController' });
 }
 

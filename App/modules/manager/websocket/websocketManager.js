@@ -26,6 +26,7 @@ class WebsocketManager extends LifecycleManager {
             const mode = this.mainWindow ? 'Electron' : 'Server';
             this.logger.info('Initializing WebSocket manager', { mode, port: this.config.port || 8080 });
 
+            // FIX: Method name should be getDatabaseAdapter, not getAdapter
             // Check if database has enhanced adapter support
             if (this.database && typeof this.database.getDatabaseAdapter === 'function') {
                 this.databaseAdapter = this.database.getDatabaseAdapter();

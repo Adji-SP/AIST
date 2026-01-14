@@ -16,9 +16,16 @@ class IPCManager {
         this.eventBus = getEventBus();
         this.logger = getLogger().child({ module: 'IPCManager' });
 
+        // FIX: Prevent Double-Wrapping
         // Create DatabaseService facade if database is available
         if (database) {
-            this.databaseService = new DatabaseService(database);
+            if (database.insert && database.find && typeof database.insert === 'function') {
+                // It's already a DatabaseService
+                this.databaseService = database;
+            } else {
+                // It's a raw database adapter, wrap it
+                this.databaseService = new DatabaseService(database);
+            }
         }
     }
 

@@ -5,8 +5,15 @@ let databaseService;
 let logger;
 
 function initializeController(databaseInstance) {
-    // Create DatabaseService facade
-    databaseService = new DatabaseService(databaseInstance);
+    // FIX: Prevent Double-Wrapping
+    // Check if it's already a DatabaseService (has .insert and .find methods)
+    if (databaseInstance.insert && databaseInstance.find && typeof databaseInstance.insert === 'function') {
+        // It's already a DatabaseService
+        databaseService = databaseInstance;
+    } else {
+        // It's a raw database adapter, wrap it
+        databaseService = new DatabaseService(databaseInstance);
+    }
     logger = getLogger().child({ module: 'DatabaseController' });
 }
 

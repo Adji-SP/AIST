@@ -15,9 +15,16 @@ class WebSocketHandler {
             port: config.port || 8080
         });
 
+        // FIX: Prevent Double-Wrapping (use duck-typing instead of instanceof for reliability)
         // Create DatabaseService facade if database available
         if (dbInstance) {
-            this.databaseService = new DatabaseService(dbInstance);
+            if (dbInstance.insert && dbInstance.find && typeof dbInstance.insert === 'function') {
+                // It's already a DatabaseService
+                this.databaseService = dbInstance;
+            } else {
+                // It's a raw database adapter, wrap it
+                this.databaseService = new DatabaseService(dbInstance);
+            }
         }
 
         this.config = {
@@ -448,36 +455,24 @@ class WebSocketHandler {
     // Save data to database
     async _saveToDatabase(data, ws, clientData) {
         try {
-            // Use DatabaseService if available, fallback to raw db
-            let result;
-            if (this.databaseService) {
-                // DatabaseService handles encryption and validation automatically
-                const dbResult = await this.databaseService.insert(
-                    this.config.dbTableName,
-                    data,
-                    {
-                        validate: false, // WebSocket data already validated
-                        emit: true // Emit event for other modules
-                    }
-                );
-                result = dbResult.data;
-            } else {
-                // Fallback to raw database
-                let dataToInsert = { ...data };
+            let dataToInsert = { ...data };
 
-                // Handle encryption if configured
-                if (this.db.encrypt && this.config.fieldsToEncrypt && this.config.fieldsToEncrypt.length > 0) {
-                    for (const field of this.config.fieldsToEncrypt) {
-                        if (dataToInsert[field]) {
+            // Handle encryption if configured
+            if (this.db.encrypt && this.config.fieldsToEncrypt && this.config.fieldsToEncrypt.length > 0) {
+                for (const field of this.config.fieldsToEncrypt) {
+                    if (dataToInsert.hasOwnProperty(field) && dataToInsert[field] !== null && dataToInsert[field] !== undefined) {
+                        try {
                             dataToInsert[field] = this.db.encrypt(String(dataToInsert[field]));
                             this._log('debug', `Field '${field}' encrypted`);
+                        } catch (encError) {
+                            this._log('error', `Error encrypting field '${field}': ${encError.message}`);
                         }
                     }
                 }
-
-                result = await this.db.postData(this.config.dbTableName, dataToInsert);
             }
 
+            const result = await this.db.postData(this.config.dbTableName, dataToInsert);
+            
             this._log('info', `Data saved to database (${this.config.dbTableName}): ID ${result.insertId}`);
 
             // Send success response to client
@@ -627,17 +622,7 @@ class WebSocketHandler {
                 return;
             }
 
-            // Use DatabaseService if available, fallback to raw db
-            let result;
-            if (this.databaseService) {
-                const dbResult = await this.databaseService.insert(table, data, {
-                    validate: false,
-                    emit: true
-                });
-                result = dbResult.data;
-            } else {
-                result = await this.db.postData(table, data);
-            }
+            const result = await this.db.postData(table, data);
             
             this._sendToClient(ws, {
                 type: 'db_create_response',
