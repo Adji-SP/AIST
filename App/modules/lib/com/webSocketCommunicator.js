@@ -54,10 +54,31 @@ class WebSocketHandler {
         this.dbSubscriptions = new Map(); // NEW: Store database subscriptions
         this.isRunning = false;
         this.connectionCount = 0;
-        
+
+        // FIX Issue #7: Table whitelist for WebSocket database operations
+        // Only these tables can be accessed via WebSocket to prevent unauthorized access
+        this.ALLOWED_TABLES = [
+            'sensors_data',
+            'sensor_data',
+            'temperature_data',
+            'pressure_data',
+            'humidity_data',
+            'ph_data',
+            'moisture_data',
+            'device_status',
+            'sensor_readings',
+            // Add other sensor/data tables as needed
+            // NEVER add: users, admin_config, system_settings, authentication, etc.
+        ];
+
+        // FIX Issue #6: Enhanced authentication with token expiry and rate limiting
+        this.tokenExpiry = null;
+        this.authAttempts = new Map(); // Track failed auth attempts per client
+
         // Generate auth token if authentication is enabled but no token provided
         if (this.config.enableAuthentication && !this.config.authToken) {
             this.config.authToken = this._generateAuthToken();
+            this.tokenExpiry = Date.now() + (60 * 60 * 1000); // Token expires in 1 hour
         }
     }
 
@@ -79,9 +100,11 @@ class WebSocketHandler {
             this.isRunning = true;
             
             alert.websocket.serverStarted(this.config.port);
-            
+
+            // FIX Issue #6: Don't log token - security risk
             if (this.config.enableAuthentication) {
-                this._log('info', `Authentication enabled. Token: ${this.config.authToken}`);
+                const tokenPreview = this.config.authToken ? `${this.config.authToken.substring(0, 8)}...` : 'none';
+                this._log('info', `Authentication enabled. Token generated (${tokenPreview})`);
             }
 
             this._sendToRenderer('websocket-server-status', {
@@ -111,12 +134,21 @@ class WebSocketHandler {
         }
 
         try {
+            // FIX Issue #4: Prevent race condition during shutdown
+            // Take snapshot of clients to avoid concurrent modification during iteration
+            const clientsSnapshot = Array.from(this.clients.entries());
+
             // Close all client connections
-            this.clients.forEach((clientData, ws) => {
-                if (ws.readyState === WebSocket.OPEN) {
-                    ws.close(1000, 'Server shutdown');
+            for (const [ws, clientData] of clientsSnapshot) {
+                if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                    try {
+                        ws.close(1000, 'Server shutdown');
+                    } catch (error) {
+                        this._log('error', `Error closing WebSocket for client ${clientData.id}: ${error.message}`);
+                    }
                 }
-            });
+            }
+
             this.clients.clear();
 
             // Close server
@@ -219,11 +251,29 @@ class WebSocketHandler {
 
     // Setup client-specific event handlers
     _setupClientEventHandlers(ws, clientData) {
+        // FIX Issue #20: Track subscriptions per client for cleanup on disconnect
+        clientData.subscriptions = []; // Array to store subscription cleanup functions
+
         ws.on('message', (rawData) => {
             this._handleClientMessage(ws, clientData, rawData);
         });
 
         ws.on('close', (code, reason) => {
+            // FIX Issue #20: Cleanup all subscriptions for this client
+            if (clientData.subscriptions && clientData.subscriptions.length > 0) {
+                this._log('info', `Cleaning up ${clientData.subscriptions.length} subscriptions for client ${clientData.id}`);
+                for (const unsubscribe of clientData.subscriptions) {
+                    try {
+                        if (typeof unsubscribe === 'function') {
+                            unsubscribe();
+                        }
+                    } catch (error) {
+                        this._log('error', `Error unsubscribing: ${error.message}`);
+                    }
+                }
+                clientData.subscriptions = [];
+            }
+
             this._handleClientDisconnection(ws, clientData, code, reason);
         });
 
@@ -334,10 +384,45 @@ class WebSocketHandler {
             return;
         }
 
+        // FIX Issue #6: Check token expiry
+        if (this.tokenExpiry && Date.now() > this.tokenExpiry) {
+            this._sendToClient(ws, {
+                type: 'auth_response',
+                success: false,
+                message: 'Authentication token has expired',
+                timestamp: new Date().toISOString()
+            });
+            this._log('warn', `Expired token used by client ${clientData.id}`);
+            setTimeout(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.close(1008, 'Token expired');
+                }
+            }, 100);
+            return;
+        }
+
+        // FIX Issue #6: Rate limiting - check failed authentication attempts
+        const clientId = clientData.id;
+        const attempts = this.authAttempts.get(clientId) || 0;
+
+        if (attempts >= 5) {
+            this._sendToClient(ws, {
+                type: 'auth_response',
+                success: false,
+                message: 'Too many authentication attempts. Connection blocked.',
+                timestamp: new Date().toISOString()
+            });
+            this._log('warn', `Client ${clientId} blocked - too many auth attempts`);
+            ws.close(1008, 'Too many authentication attempts');
+            return;
+        }
+
         if (message.token === this.config.authToken) {
             clientData.isAuthenticated = true;
+            // Reset failed attempts on success
+            this.authAttempts.delete(clientId);
             this._log('info', `Client ${clientData.id} authenticated successfully`);
-            
+
             this._sendToClient(ws, {
                 type: 'auth_response',
                 success: true,
@@ -351,15 +436,18 @@ class WebSocketHandler {
                 timestamp: new Date().toISOString()
             });
         } else {
-            this._log('warn', `Authentication failed for client ${clientData.id}`);
-            
+            // Increment failed attempts
+            this.authAttempts.set(clientId, attempts + 1);
+            this._log('warn', `Authentication failed for client ${clientData.id} (attempt ${attempts + 1}/5)`);
+
             this._sendToClient(ws, {
                 type: 'auth_response',
                 success: false,
                 message: 'Invalid authentication token',
+                attemptsRemaining: 5 - (attempts + 1),
                 timestamp: new Date().toISOString()
             });
-            
+
             // Close connection after failed auth
             setTimeout(() => {
                 if (ws.readyState === WebSocket.OPEN) {
@@ -622,6 +710,23 @@ class WebSocketHandler {
                 return;
             }
 
+            // FIX Issue #7: Validate table access is authorized
+            if (!this.ALLOWED_TABLES.includes(table)) {
+                this._sendToClient(ws, {
+                    type: 'db_create_response',
+                    success: false,
+                    error: `Unauthorized table access: ${table}`,
+                    timestamp: new Date().toISOString()
+                });
+                this._log('warn', `Unauthorized table access attempt: ${table} by ${clientData.id}`);
+                return;
+            }
+
+            // Add row-level security - associate data with client
+            if (clientData.userId) {
+                data.user_id = clientData.userId; // Force user_id to prevent impersonation
+            }
+
             const result = await this.db.postData(table, data);
             
             this._sendToClient(ws, {
@@ -671,7 +776,25 @@ class WebSocketHandler {
                 return;
             }
 
-            const result = await this.db.getDataByFilters(table, filters || {}, options || {});
+            // FIX Issue #7: Validate table access is authorized
+            if (!this.ALLOWED_TABLES.includes(table)) {
+                this._sendToClient(ws, {
+                    type: 'db_read_response',
+                    success: false,
+                    error: `Unauthorized table access: ${table}`,
+                    timestamp: new Date().toISOString()
+                });
+                this._log('warn', `Unauthorized table access attempt: ${table} by ${clientData.id}`);
+                return;
+            }
+
+            // Add row-level security - filter by user if authenticated
+            const secureFilters = { ...(filters || {}) };
+            if (clientData.userId) {
+                secureFilters.user_id = clientData.userId; // Only show user's own data
+            }
+
+            const result = await this.db.getDataByFilters(table, secureFilters, options || {});
             
             this._sendToClient(ws, {
                 type: 'db_read_response',
@@ -708,7 +831,31 @@ class WebSocketHandler {
                 return;
             }
 
-            const result = await this.db.updateData(table, data, whereClause || '', whereParams || []);
+            // FIX Issue #7: Validate table access is authorized
+            if (!this.ALLOWED_TABLES.includes(table)) {
+                this._sendToClient(ws, {
+                    type: 'db_update_response',
+                    success: false,
+                    error: `Unauthorized table access: ${table}`,
+                    timestamp: new Date().toISOString()
+                });
+                this._log('warn', `Unauthorized table access attempt: ${table} by ${clientData.id}`);
+                return;
+            }
+
+            // Add row-level security - only allow users to update their own data
+            let secureWhereClause = whereClause || '';
+            let secureWhereParams = whereParams || [];
+            if (clientData.userId) {
+                if (secureWhereClause) {
+                    secureWhereClause = `(${secureWhereClause}) AND user_id = ?`;
+                } else {
+                    secureWhereClause = 'user_id = ?';
+                }
+                secureWhereParams = [...secureWhereParams, clientData.userId];
+            }
+
+            const result = await this.db.updateData(table, data, secureWhereClause, secureWhereParams);
             
             this._sendToClient(ws, {
                 type: 'db_update_response',
@@ -757,9 +904,33 @@ class WebSocketHandler {
                 return;
             }
 
-            const result = await this.db.deleteData ? 
-                await this.db.deleteData(table, whereClause || '', whereParams || []) :
-                await this.db.table(table).where(whereClause || {}).delete();
+            // FIX Issue #7: Validate table access is authorized
+            if (!this.ALLOWED_TABLES.includes(table)) {
+                this._sendToClient(ws, {
+                    type: 'db_delete_response',
+                    success: false,
+                    error: `Unauthorized table access: ${table}`,
+                    timestamp: new Date().toISOString()
+                });
+                this._log('warn', `Unauthorized table access attempt: ${table} by ${clientData.id}`);
+                return;
+            }
+
+            // Add row-level security - only allow users to delete their own data
+            let secureWhereClause = whereClause || '';
+            let secureWhereParams = whereParams || [];
+            if (clientData.userId) {
+                if (secureWhereClause) {
+                    secureWhereClause = `(${secureWhereClause}) AND user_id = ?`;
+                } else {
+                    secureWhereClause = 'user_id = ?';
+                }
+                secureWhereParams = [...secureWhereParams, clientData.userId];
+            }
+
+            const result = await this.db.deleteData ?
+                await this.db.deleteData(table, secureWhereClause, secureWhereParams) :
+                await this.db.table(table).where(secureWhereClause || {}).delete();
             
             this._sendToClient(ws, {
                 type: 'db_delete_response',
@@ -821,7 +992,8 @@ class WebSocketHandler {
             }
             
             this.rooms.get(roomId).clients.add(clientData.id);
-            
+
+            // FIX Issue #20: Track subscription per client for proper cleanup
             // If database supports real-time subscriptions (like Firestore)
             if (this.db.subscribe && !this.dbSubscriptions.has(roomId)) {
                 const unsubscribe = this.db.subscribe(table, (changes) => {
@@ -832,11 +1004,25 @@ class WebSocketHandler {
                         timestamp: new Date().toISOString()
                     });
                 }, filters);
-                
+
                 this.dbSubscriptions.set(roomId, unsubscribe);
+
+                // Add unsubscribe function to client's subscriptions for cleanup
+                if (clientData.subscriptions) {
+                    clientData.subscriptions.push(() => {
+                        if (this.dbSubscriptions.has(roomId)) {
+                            const unsub = this.dbSubscriptions.get(roomId);
+                            if (typeof unsub === 'function') {
+                                unsub();
+                            }
+                            this.dbSubscriptions.delete(roomId);
+                        }
+                    });
+                }
+
                 this._log('info', `Real-time database subscription created for ${table}`);
             }
-            
+
             this._sendToClient(ws, {
                 type: 'db_subscribe_response',
                 success: true,
@@ -957,6 +1143,7 @@ class WebSocketHandler {
             lastDataTime: client.lastDataTime
         }));
 
+        // FIX Issue #6: Don't expose authToken in status - security risk
         return {
             isRunning: this.isRunning,
             port: this.config.port,
@@ -964,7 +1151,7 @@ class WebSocketHandler {
             connectionCount: this.connectionCount,
             maxConnections: this.config.maxConnections,
             authEnabled: this.config.enableAuthentication,
-            authToken: this.config.enableAuthentication ? this.config.authToken : null,
+            tokenExpiry: this.tokenExpiry ? new Date(this.tokenExpiry).toISOString() : null,
             clients: clientsInfo,
             uptime: this.isRunning ? Date.now() - this.startTime : 0
         };

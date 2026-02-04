@@ -1,6 +1,6 @@
 // src/hook/useFirestoreClean.js
 // CLEAN React hooks - Just handles React state, uses shared library for logic
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getFirebaseClient } from '@lib/client/firebaseClient';
 
 // Cache for Firestore data to prevent unnecessary loading states
@@ -15,7 +15,8 @@ const getCacheKey = (collectionName, options) => {
  * Now with caching to prevent re-loading on component remount
  */
 export const useFirestore = (collectionName, options = {}) => {
-    const cacheKey = getCacheKey(collectionName, options);
+    // Memoize the cache key to prevent unnecessary recalculations
+    const cacheKey = useMemo(() => getCacheKey(collectionName, options), [collectionName, options]);
     const cachedData = dataCache.get(cacheKey);
 
     // Initialize with cached data if available
@@ -29,8 +30,11 @@ export const useFirestore = (collectionName, options = {}) => {
             return;
         }
 
+        // Get current cached data at effect execution time
+        const currentCachedData = dataCache.get(cacheKey);
+
         // Only show loading if we don't have cached data
-        if (!cachedData) {
+        if (!currentCachedData) {
             setLoading(true);
         }
         setError(null);
@@ -61,7 +65,7 @@ export const useFirestore = (collectionName, options = {}) => {
 
         // Cleanup subscription on unmount
         return unsubscribe;
-    }, [collectionName, JSON.stringify(options), cacheKey, cachedData]);
+    }, [collectionName, cacheKey, options]);
 
     return { data, loading, error };
 };

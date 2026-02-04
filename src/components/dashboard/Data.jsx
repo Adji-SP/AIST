@@ -325,8 +325,8 @@ const DataPage = () => {
         imageUrl: keylimeBackground
     });
 
-    // App configuration
-    const appConfig = {
+    // App configuration - wrapped in useMemo to prevent recreating on every render
+    const appConfig = React.useMemo(() => ({
         siteProfile: {
             name: gardenProfile.name,
             description: gardenProfile.description
@@ -357,7 +357,7 @@ const DataPage = () => {
                 costBenefit: 3.8
             }
         }
-    };
+    }), [gardenProfile]);
 
     // Color palette
     const palette = appConfig.palette;

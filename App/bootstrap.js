@@ -14,7 +14,7 @@ const path = require('path');
 const configResolver = require('./config');
 const { EVENTS } = require('./config/constants');
 const { getInstance: getEventBus } = require('./modules/lib/events/EventBus');
-const registerRoutes = require('./Http/routes');
+const registerRoutes = require('./Http/routes/routes');
 
 // Import modular components
 const DatabaseManager = require('./modules/manager/database/databaseManager');
@@ -126,6 +126,12 @@ class AppBootstrap {
 
    initializeEncryptionService() {
         console.log('[Bootstrap] Initializing encryption service...');
+
+        // FIX Issue #2: Validate encryption key exists before access
+        if (!this.config.encryption || !this.config.encryption.key) {
+            throw new Error('DB_ENCRYPTION_KEY environment variable is required but not set');
+        }
+
         const encryptionKey = this.config.encryption.key;
         this.encryptionService = new EncryptionService(encryptionKey);
         this.eventBus.emit(EVENTS.ENCRYPTION_READY, this.encryptionService);
@@ -135,10 +141,20 @@ class AppBootstrap {
         console.log('[Bootstrap] Initializing database...');
         this.databaseManager = new DatabaseManager(this.encryptionService, this.config.database);
         await this.databaseManager.initialize();
+
+        // FIX Issue #1: Validate database initialization succeeded
         const dbAdapter = this.databaseManager.getDatabaseAdapter();
+        if (!dbAdapter) {
+            throw new Error('Database initialization failed - adapter is null');
+        }
+
         const validationService = getValidationService();
-        
         this.databaseService = new DatabaseService(dbAdapter, validationService);
+
+        // Validate DatabaseService was created successfully
+        if (!this.databaseService) {
+            throw new Error('Database initialization failed - service creation failed');
+        }
 
         this.eventBus.emit(EVENTS.DATABASE_READY, this.databaseManager);
     }
@@ -161,7 +177,13 @@ class AppBootstrap {
 
     async initializeAPI() {
         console.log('[Bootstrap] Initializing API server...');
-        const db = this.databaseService; 
+
+        // FIX Issue #1: Validate database service exists before using it
+        if (!this.databaseService) {
+            throw new Error('Cannot initialize API server - database service not initialized');
+        }
+
+        const db = this.databaseService;
         this.apiServer = new APIServer(db, this.config.api, registerRoutes);
 
         if (this.mode !== 'serverless') {
@@ -173,7 +195,12 @@ class AppBootstrap {
 
     async initializeSerial() {
         console.log('[Bootstrap] Initializing serial manager...');
-        
+
+        // FIX Issue #1: Validate database service exists before using it
+        if (!this.databaseService) {
+            throw new Error('Cannot initialize serial manager - database service not initialized');
+        }
+
         const db = this.databaseService;
         const window = this.windowManager ? this.windowManager.getMainWindow() : null;
 
@@ -184,7 +211,12 @@ class AppBootstrap {
 
     async initializeWebsocket() {
         console.log('[Bootstrap] Initializing websocket manager...');
-        
+
+        // FIX Issue #1: Validate database service exists before using it
+        if (!this.databaseService) {
+            throw new Error('Cannot initialize websocket manager - database service not initialized');
+        }
+
         const db = this.databaseService;
         const window = this.windowManager ? this.windowManager.getMainWindow() : null;
 
@@ -195,9 +227,15 @@ class AppBootstrap {
 
    async initializeIPC() {
         console.log('[Bootstrap] Initializing IPC manager...');
-        const dbService = this.databaseService; 
+
+        // FIX Issue #1: Validate database service exists before using it
+        if (!this.databaseService) {
+            throw new Error('Cannot initialize IPC manager - database service not initialized');
+        }
+
+        const dbService = this.databaseService;
         this.ipcManager = new IPCManager(dbService, this.serialManager);
-        
+
         this.ipcManager.setupHandlers();
         this.eventBus.emit(EVENTS.IPC_READY, this.ipcManager);
     }
@@ -250,7 +288,9 @@ class AppBootstrap {
      * @private
      */
     async _performShutdown() {
+        // FIX Issue #12 (Medium): Include IPC in shutdown sequence
         const shutdownOrder = [
+            { name: 'IPC', manager: this.ipcManager, method: 'close' },
             { name: 'Serial', manager: this.serialManager, method: 'close' },
             { name: 'WebSocket', manager: this.websocketManager, method: 'close' },
             { name: 'API', manager: this.apiServer, method: 'stop' },
@@ -335,6 +375,15 @@ class AppBootstrap {
      */
     off(eventName, handlerOrId) {
         this.eventBus.off(eventName, handlerOrId);
+    }
+
+    /**
+     * Emit a bootstrap event
+     * @param {string} eventName - Event name
+     * @param {...any} args - Event arguments
+     */
+    emit(eventName, ...args) {
+        this.eventBus.emit(eventName, ...args);
     }
 }
 

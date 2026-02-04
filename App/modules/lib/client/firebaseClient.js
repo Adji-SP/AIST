@@ -36,8 +36,20 @@ class FirebaseClient {
      */
     initialize() {
         if (!this.app) {
-            this.app = initializeApp(this.config);
-            this.db = getFirestore(this.app);
+            try {
+                // Validate configuration before initializing
+                if (!this.config.projectId || this.config.projectId === 'your-firebase-project-id') {
+                    console.warn('⚠️ Firebase not configured properly. Using demo mode.');
+                    this.isDemo = true;
+                    return this;
+                }
+                this.app = initializeApp(this.config);
+                this.db = getFirestore(this.app);
+                this.isDemo = false;
+            } catch (error) {
+                console.error('❌ Firebase initialization failed:', error.message);
+                this.isDemo = true;
+            }
         }
         return this;
     }
@@ -60,6 +72,12 @@ class FirebaseClient {
      * @returns {function} Unsubscribe function
      */
     subscribe(collectionName, options = {}, callback) {
+        // Handle demo mode - return empty data
+        if (this.isDemo || !this.db) {
+            callback([], null);
+            return () => {}; // Return no-op unsubscribe
+        }
+
         const collectionRef = collection(this.db, collectionName);
         const constraints = this._buildQueryConstraints(options);
 
@@ -98,6 +116,11 @@ class FirebaseClient {
      * Get documents once (no real-time)
      */
     async get(collectionName, options = {}) {
+        // Handle demo mode - return empty data
+        if (this.isDemo || !this.db) {
+            return [];
+        }
+
         const collectionRef = collection(this.db, collectionName);
         const constraints = this._buildQueryConstraints(options);
 
@@ -121,6 +144,11 @@ class FirebaseClient {
      * Add a document to a collection
      */
     async add(collectionName, data) {
+        // Handle demo mode
+        if (this.isDemo || !this.db) {
+            console.warn('⚠️ Demo mode: add operation not supported');
+            return { id: 'demo-' + Date.now(), success: false, demo: true };
+        }
         const collectionRef = collection(this.db, collectionName);
         const docRef = await addDoc(collectionRef, {
             ...data,
@@ -133,6 +161,11 @@ class FirebaseClient {
      * Update a document
      */
     async update(collectionName, docId, data) {
+        // Handle demo mode
+        if (this.isDemo || !this.db) {
+            console.warn('⚠️ Demo mode: update operation not supported');
+            return { success: false, demo: true };
+        }
         const docRef = doc(this.db, collectionName, docId);
         await updateDoc(docRef, {
             ...data,
@@ -145,6 +178,11 @@ class FirebaseClient {
      * Delete a document
      */
     async delete(collectionName, docId) {
+        // Handle demo mode
+        if (this.isDemo || !this.db) {
+            console.warn('⚠️ Demo mode: delete operation not supported');
+            return { success: false, demo: true };
+        }
         const docRef = doc(this.db, collectionName, docId);
         await deleteDoc(docRef);
         return { success: true };

@@ -12,6 +12,7 @@ const getGreeting = () => {
 };
 
 // Komponen ToggleGardenSelector (tidak berubah, sudah bagus)
+// eslint-disable-next-line no-unused-vars
 const ToggleGardenSelector = ({ selected, onSelectionChange, options }) => {
     const [option1, option2] = options;
     return (
@@ -50,10 +51,12 @@ const Header = ({
   const location = useLocation(); // Hook untuk mendapatkan info URL
   const greeting = getGreeting();
   // Ubah nama opsi agar cocok dengan nama file/komponen
+  // eslint-disable-next-line no-unused-vars
   const gardenOptions = ['Kasturi Lime', 'Key Lime'];
 
   // PERUBAHAN 1: Hapus `useState`. Tentukan kebun aktif dari URL.
   // Ini memastikan toggle selalu sinkron dengan halaman yang ditampilkan.
+  // eslint-disable-next-line no-unused-vars
   const selectedGarden = useMemo(() => {
     if (location.pathname.includes('/key-lime')) {
       return 'Key Lime';
@@ -63,6 +66,7 @@ const Header = ({
   }, [location.pathname]);
 
   // PERUBAHAN 2: Fungsi ini sekarang akan mengubah URL, bukan state lokal.
+  // eslint-disable-next-line no-unused-vars
   const handleGardenChange = (garden) => {
     if (garden === 'Key Lime') {
       navigate('/overview/key-lime');

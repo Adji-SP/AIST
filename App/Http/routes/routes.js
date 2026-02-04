@@ -1,7 +1,7 @@
-// App/Http/routes.js
-const authController = require('./Controllers/authController');
-const mauiController = require('./Controllers/mauiController');
-const databaseController = require('./Controllers/databaseController');
+// App/Http/routes/routes.js
+const authController = require('../Controllers/authController');
+const mauiController = require('../Controllers/mauiController');
+const databaseController = require('../Controllers/databaseController');
 
 /**
  * Registers routes on the Express app

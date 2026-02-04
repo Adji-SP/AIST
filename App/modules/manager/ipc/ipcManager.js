@@ -29,6 +29,26 @@ class IPCManager {
         }
     }
 
+    // FIX Issue #24: Helper method for structured error responses
+    _createErrorResponse(error, code = 'UNKNOWN_ERROR', context = {}) {
+        return {
+            success: false,
+            error: error.message || String(error),
+            code: code,
+            timestamp: new Date().toISOString(),
+            ...context
+        };
+    }
+
+    _createSuccessResponse(data, context = {}) {
+        return {
+            success: true,
+            data: data,
+            timestamp: new Date().toISOString(),
+            ...context
+        };
+    }
+
     setupHandlers() {
         this.logger.info('Setting up IPC handlers');
 
@@ -50,22 +70,25 @@ class IPCManager {
     }
 
     setupDatabaseHandlers() {
+        // FIX Issue #24: Use structured error responses with error codes
         // User handlers
         ipcMain.handle('get-users', async () => {
             try {
                 const users = await this.database.getAllUsers();
-                return { success: true, data: users };
+                return this._createSuccessResponse(users);
             } catch (err) {
-                return { success: false, error: err.message };
+                this.logger.error('IPC get-users failed', { error: err.message });
+                return this._createErrorResponse(err, 'DATABASE_READ_ERROR', { operation: 'get-users' });
             }
         });
 
         ipcMain.handle('insert-user', async (event, name, email) => {
             try {
                 const result = await this.database.insertUser(name, email);
-                return { success: true, id: result.insertId };
+                return this._createSuccessResponse({ id: result.insertId }, { operation: 'insert-user' });
             } catch (err) {
-                return { success: false, error: err.message };
+                this.logger.error('IPC insert-user failed', { error: err.message });
+                return this._createErrorResponse(err, 'DATABASE_INSERT_ERROR', { operation: 'insert-user', name, email });
             }
         });
 
@@ -78,10 +101,10 @@ class IPCManager {
                     validate: false, // IPC data already validated by client
                     emit: true
                 });
-                return { success: true, id: result.data.insertId };
+                return this._createSuccessResponse({ id: result.data.insertId }, { operation: 'post-data', table });
             } catch (err) {
                 this.logger.error('IPC post-data failed', { table, error: err.message });
-                return { success: false, error: err.message };
+                return this._createErrorResponse(err, 'DATABASE_INSERT_ERROR', { operation: 'post-data', table });
             }
         });
 
@@ -93,10 +116,10 @@ class IPCManager {
                     validate: false,
                     emit: true
                 });
-                return { success: true, id: result.data.insertId };
+                return this._createSuccessResponse({ id: result.data.insertId }, { operation: 'insert-data', table });
             } catch (err) {
                 this.logger.error('IPC insert-data failed', { table, error: err.message });
-                return { success: false, error: err.message };
+                return this._createErrorResponse(err, 'DATABASE_INSERT_ERROR', { operation: 'insert-data', table });
             }
         });
 
@@ -105,10 +128,10 @@ class IPCManager {
                 this.logger.debug('IPC update-data', { table, whereClause });
                 // Use DatabaseService for automatic event emission
                 const result = await this.databaseService.update(table, data, whereClause, whereParams);
-                return { success: true, affectedRows: result.data.affectedRows };
+                return this._createSuccessResponse({ affectedRows: result.data.affectedRows }, { operation: 'update-data', table });
             } catch (err) {
                 this.logger.error('IPC update-data failed', { table, error: err.message });
-                return { success: false, error: err.message };
+                return this._createErrorResponse(err, 'DATABASE_UPDATE_ERROR', { operation: 'update-data', table });
             }
         });
 
@@ -117,10 +140,10 @@ class IPCManager {
                 this.logger.debug('IPC delete-data', { table, whereClause });
                 // Use DatabaseService for automatic event emission
                 const result = await this.databaseService.delete(table, whereClause, whereParams);
-                return { success: true, affectedRows: result.data.affectedRows };
+                return this._createSuccessResponse({ affectedRows: result.data.affectedRows }, { operation: 'delete-data', table });
             } catch (err) {
                 this.logger.error('IPC delete-data failed', { table, error: err.message });
-                return { success: false, error: err.message };
+                return this._createErrorResponse(err, 'DATABASE_DELETE_ERROR', { operation: 'delete-data', table });
             }
         });
 

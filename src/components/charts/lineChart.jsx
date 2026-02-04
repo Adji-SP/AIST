@@ -10,7 +10,7 @@ import {
     Legend,
     Filler
 } from 'chart.js';
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 //
 ChartJS.register(
     CategoryScale,
@@ -35,19 +35,21 @@ export default function LineChart({
     const chartRef = useRef(null);
 
     // --- PERUBAHAN DI SINI ---
-    // Mengubah warna teks default dari putih menjadi abu-abu agar terlihat
-    const defaultColors = {
-        primary: '#3b82f6',
-        secondary: '#f97316',
-        text: '#6b7280', // Sebelumnya '#ffffff' (putih)
-        border: document.documentElement?.getAttribute('data-theme') === 'dark'
-            ? 'rgba(255, 255, 255, 0.1)'
-            : 'rgba(229, 231, 235, 1)' // Menggunakan warna abu-abu yang lebih jelas
-    };
+    // Memoize finalColors to prevent it from changing on every render
+    const finalColors = useMemo(() => {
+        const defaultColors = {
+            primary: '#3b82f6',
+            secondary: '#f97316',
+            text: '#6b7280', // Sebelumnya '#ffffff' (putih)
+            border: document.documentElement?.getAttribute('data-theme') === 'dark'
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(229, 231, 235, 1)' // Menggunakan warna abu-abu yang lebih jelas
+        };
+        return { ...defaultColors, ...colors };
+    }, [colors]);
 
-    const finalColors = { ...defaultColors, ...colors };
-
-    const defaultData = {
+    // useMemo to prevent recreating on every render
+    const defaultData = useMemo(() => ({
         labels: ['Aug 01', 'Aug 02', 'Aug 03', 'Aug 04', 'Aug 05', 'Aug 06'],
         datasets: [{
             label: 'CPU Usage',
@@ -70,9 +72,9 @@ export default function LineChart({
             pointRadius: 3,
             pointHoverRadius: 6,
         }]
-    };
+    }), [finalColors]);
 
-    const defaultOptions = {
+    const defaultOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -101,12 +103,12 @@ export default function LineChart({
                 grid: { color: finalColors.border, lineWidth: 1 },
                 ticks: { color: finalColors.text, font: { size: 12, weight: '500' } },
                 // Kita akan hapus min & max agar skala bisa otomatis menyesuaikan data
-                // min: 0, 
-                // max: 100 
+                // min: 0,
+                // max: 100
             }
         },
         interaction: { intersect: false, mode: 'index' }
-    };
+    }), [finalColors]);
 
     useEffect(() => {
         if (canvasRef.current) {
@@ -129,7 +131,7 @@ export default function LineChart({
                 chartRef.current = null;
             }
         };
-    }, [data, options, finalColors]); // dependensi tetap
+    }, [data, options, finalColors, defaultData, defaultOptions]);
 
     return (
         <div className={className} style={{ height }}>

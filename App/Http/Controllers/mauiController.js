@@ -95,7 +95,47 @@ async function genericDataHandler(req, res) {
     });
 }
 
+/**
+ * Get data from a table
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ */
+async function getData(req, res) {
+    if (!db) {
+        return res.status(500).json({ success: false, error: "Controller has not been initialized." });
+    }
+
+    try {
+        // Get query parameters
+        const { table = 'sensors_data', limit = 100 } = req.query;
+
+        // Fetch data from database
+        let result;
+        if (db.getAll && typeof db.getAll === 'function') {
+            // DatabaseService method
+            const serviceResult = await db.getAll(table, { limit: parseInt(limit) });
+            result = serviceResult.data;
+        } else if (db.getData && typeof db.getData === 'function') {
+            // Raw adapter method
+            result = await db.getData(table, {}, { limit: parseInt(limit) });
+        } else {
+            throw new Error('Database instance has no getAll or getData method');
+        }
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+}
+
 module.exports = {
     initializeController,
-    genericDataHandler
+    genericDataHandler,
+    getData
 };

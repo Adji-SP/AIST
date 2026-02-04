@@ -1,6 +1,6 @@
 import React from 'react';
-import { 
-  Leaf, X, Home, BarChart2, History, Wrench, Users, LogOut, ChevronsLeft, ChevronsRight 
+import {
+  Leaf, X, Home, History, Wrench, Users, LogOut, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 

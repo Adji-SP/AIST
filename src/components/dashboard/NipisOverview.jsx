@@ -180,8 +180,8 @@ const NipisOverview = () => {
         limit: 10
     });
 
-    // Use the new collections data
-    const sensorData = sensorsData.data?.length > 0 ? sensorsData.data : [];
+    // Use the new collections data - wrapped in useMemo to prevent recreation
+    const sensorData = useMemo(() => sensorsData.data?.length > 0 ? sensorsData.data : [], [sensorsData.data]);
     const sensorLoading = sensorsData.loading;
     const sensorError = sensorsData.error;
 
@@ -198,9 +198,11 @@ const NipisOverview = () => {
             : new Date();
 
     // Use Firestore alerts directly instead of API
+    // eslint-disable-next-line no-unused-vars
     const [alerts, setAlerts] = useState(alertsData.data || []);
     const [devices, setDevices] = useState([]);
     const [plantData, setPlantData] = useState(null);
+    // eslint-disable-next-line no-unused-vars
     const [productionData, setProductionData] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
     const fetchControllerRef = useRef(null);
@@ -245,6 +247,7 @@ const NipisOverview = () => {
     useEffect(() => {
         fetchAdditionalData();
         return () => { if (fetchControllerRef.current) fetchControllerRef.current.abort(); }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isConnected, selectedGarden]);
 
     const latestSensorData = useMemo(() => sensorData?.[0] || null, [sensorData]);
@@ -259,6 +262,7 @@ const NipisOverview = () => {
     }, [latestSensorData]);
 
     // Calculate revenue based on yield
+    // eslint-disable-next-line no-unused-vars
     const calculatedRevenue = useMemo(() => {
         const revenue = calculatedYield * 3.65;
         return revenue.toFixed(2);
@@ -358,7 +362,7 @@ const NipisOverview = () => {
                         <span>{connectionStatus.text}</span>
                         {connectionStatus.pulse && <div className="w-2 h-2 bg-current rounded-full animate-pulse" title="Receiving live data"></div>}
                     </div>
-                    {lastUpdated && <span className="text-gray-500 hidden md:block">Last updated: {lastUpdated.toLocaleTimeString('en-US')}</span>}
+                    {lastUpdated && lastUpdated instanceof Date && !isNaN(lastUpdated) && <span className="text-gray-500 hidden md:block">Last updated: {lastUpdated.toLocaleTimeString('en-US')}</span>}
                 </div>
 
                 <main className="flex-1 px-4 py-6 overflow-auto">

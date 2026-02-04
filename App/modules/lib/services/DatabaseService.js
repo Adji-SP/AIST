@@ -106,6 +106,26 @@ class DatabaseService {
      */
     async update(tableName, data, whereClause, whereParams = []) {
         try {
+            // FIX Issue #5: Validate whereClause to prevent SQL injection
+            if (typeof whereClause !== 'string') {
+                throw new Error('WHERE clause must be a string');
+            }
+            if (!Array.isArray(whereParams)) {
+                throw new Error('WHERE parameters must be an array');
+            }
+
+            // Detect dangerous SQL patterns
+            const dangerousPatterns = /;\s*(drop|delete|insert|update|create|alter|truncate|exec|execute)|\-\-|\/\*|\*\/|xp_|sp_|0x[0-9a-f]+|union\s+select/i;
+            if (dangerousPatterns.test(whereClause)) {
+                throw new Error('Invalid WHERE clause - potentially dangerous SQL pattern detected');
+            }
+
+            // Ensure parameterized queries are used (whereClause should contain ? placeholders)
+            const placeholderCount = (whereClause.match(/\?/g) || []).length;
+            if (placeholderCount !== whereParams.length) {
+                throw new Error(`WHERE clause has ${placeholderCount} placeholders but ${whereParams.length} parameters provided`);
+            }
+
             const result = await this.db.updateData(tableName, data, whereClause, whereParams);
             this.eventBus.emit('data:updated', { tableName, data, whereClause });
             return { success: true, data: result };
@@ -124,6 +144,26 @@ class DatabaseService {
      */
     async delete(tableName, whereClause, whereParams = []) {
         try {
+            // FIX Issue #5: Validate whereClause to prevent SQL injection
+            if (typeof whereClause !== 'string') {
+                throw new Error('WHERE clause must be a string');
+            }
+            if (!Array.isArray(whereParams)) {
+                throw new Error('WHERE parameters must be an array');
+            }
+
+            // Detect dangerous SQL patterns
+            const dangerousPatterns = /;\s*(drop|delete|insert|update|create|alter|truncate|exec|execute)|\-\-|\/\*|\*\/|xp_|sp_|0x[0-9a-f]+|union\s+select/i;
+            if (dangerousPatterns.test(whereClause)) {
+                throw new Error('Invalid WHERE clause - potentially dangerous SQL pattern detected');
+            }
+
+            // Ensure parameterized queries are used (whereClause should contain ? placeholders)
+            const placeholderCount = (whereClause.match(/\?/g) || []).length;
+            if (placeholderCount !== whereParams.length) {
+                throw new Error(`WHERE clause has ${placeholderCount} placeholders but ${whereParams.length} parameters provided`);
+            }
+
             const result = await this.db.deleteData(tableName, whereClause, whereParams);
             this.eventBus.emit('data:deleted', { tableName, whereClause });
             return { success: true, data: result };

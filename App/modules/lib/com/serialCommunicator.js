@@ -425,6 +425,10 @@ class SerialCommunicator {
     }
 
     _scheduleReconnection() {
+        // FIX Issue #16: Cancel existing reconnection timer to prevent race conditions
+        // This prevents multiple concurrent reconnection attempts if called while one is pending
+        this._cancelReconnection();
+
         if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
             console.log(`Max reconnection attempts (${this.config.maxReconnectAttempts}) reached. Stopping auto-reconnection.`);
             this._setState(this.connectionStates.ERROR, `Max reconnection attempts reached (${this.config.maxReconnectAttempts})`);
@@ -437,7 +441,7 @@ class SerialCommunicator {
         }
 
         this._setState(this.connectionStates.RECONNECTING, `Reconnecting in ${this.config.reconnectDelay / 1000}s... (Attempt ${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts})`);
-        
+
         this._sendToRenderer('serial-reconnect-status', {
             status: 'scheduled',
             attempts: this.reconnectAttempts,
@@ -448,13 +452,13 @@ class SerialCommunicator {
         this.reconnectTimer = setTimeout(() => {
             this.reconnectAttempts++;
             console.log(`Reconnection attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts}`);
-            
+
             this._sendToRenderer('serial-reconnect-status', {
                 status: 'attempting',
                 attempts: this.reconnectAttempts,
                 maxAttempts: this.config.maxReconnectAttempts
             });
-            
+
             this.connect();
         }, this.config.reconnectDelay);
     }

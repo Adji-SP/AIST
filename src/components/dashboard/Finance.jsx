@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-    Leaf, Droplet, Users, ShieldCheck, LandPlot, Globe, Handshake, Landmark, TrendingUp, CheckCircle, Scale, RefreshCw, BarChartHorizontal, Target, Heart, Zap, Book, Fish, TreePine
+    Leaf, Droplet, Users, ShieldCheck, Globe, Landmark, TrendingUp, CheckCircle, RefreshCw, Target, Heart, Zap, Book, Fish, TreePine
 } from 'lucide-react';
 
 // Core Layout Components
@@ -246,6 +246,7 @@ const ImpactCard = ({ impactData }) => {
     );
 };
 
+// eslint-disable-next-line no-unused-vars
 const FinancialComparisonChart = ({ title, data, loading, onRefresh }) => {
     const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: true, backgroundColor: '#1e293b', titleColor: '#cbd5e1', bodyColor: '#fff', borderColor: '#334155', borderWidth: 1, padding: 10, displayColors: true, boxPadding: 4, callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) { label += ': '; } if (context.parsed.y !== null) { label += new Intl.NumberFormat('en-US').format(context.parsed.y); } return label; } } } }, scales: { x: { grid: { display: false }, ticks: { color: theme.colors.text_body } }, y: { grid: { color: theme.colors.border, border: { dash: [4, 4] } }, ticks: { color: theme.colors.text_body } } }, interaction: { intersect: false, mode: 'index' }, elements: { point: { radius: 3, hoverRadius: 6, borderWidth: 2, hoverBorderWidth: 2 } } };
     return (
@@ -351,6 +352,7 @@ const SDGsOverview = () => {
     );
 };
 
+// eslint-disable-next-line no-unused-vars
 const DOSMDataWidget = ({ dosmStats }) => {
     return (
         <div className="bg-white rounded-xl p-6 h-full" style={{ boxShadow: theme.shadow }}>
@@ -395,6 +397,7 @@ const FinancePage = () => {
     const [financialData, setFinancialData] = useState(() => Array.from({ length: 30 }, (_, i) => ({ timestamp: new Date(new Date().setDate(new Date().getDate() - (29 - i))), regenerative_profit: parseFloat((6700 + Math.random() * 800 - 400).toFixed(0)), regenerative_cost: parseFloat((2750 + Math.random() * 300 - 150).toFixed(0)) })));
     
     // TODO: Ganti objek statis ini dengan data dari endpoint API DOSM atau database internal.
+    // eslint-disable-next-line no-unused-vars
     const [dosmStats, setDosmStats] = useState({ 
         gdpGrowth: 2.9, 
         agriEmployment: "1.4M", 
@@ -407,6 +410,7 @@ const FinancePage = () => {
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+    // eslint-disable-next-line no-unused-vars
     const [loading, setLoading] = useState(false);
 
 
@@ -415,6 +419,7 @@ const FinancePage = () => {
     // =================================================================================
     
     // TODO: Kembangkan fungsi ini untuk mengambil semua data yang relevan dari beberapa endpoint API secara bersamaan.
+    // eslint-disable-next-line no-unused-vars
     const refetchAllData = () => { 
         setLoading(true); 
         console.log("Refetching data from backend...");
@@ -436,6 +441,7 @@ const FinancePage = () => {
     // =================================================================================
     
     // Memoized Chart Data - Mengubah data mentah menjadi format yang siap untuk chart.
+    // eslint-disable-next-line no-unused-vars
     const { profitData, costData } = useMemo(() => {
         // TODO: Pastikan nama field (e.g., regenerative_profit) cocok dengan yang dikirim oleh backend.
         if (!financialData) return { profitData: { labels: [], datasets: [] }, costData: { labels: [], datasets: [] }};
