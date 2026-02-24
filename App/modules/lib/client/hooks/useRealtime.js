@@ -1,11 +1,10 @@
-// src/hook/useRealtimeClean.js
-// CLEAN React hooks for real-time WebSocket data
+// App/modules/lib/client/hooks/useRealtime.js
+// React hook for real-time WebSocket data — thin wrapper around App's WebSocketClient
 import { useState, useEffect } from 'react';
-// Removed unused: useCallback
-import { getWebSocketClient } from '@lib/client/websocketClient';
+import { getWebSocketClient } from '../websocketClient';
 
 /**
- * Main real-time hook - Subscribe to WebSocket topics
+ * Main real-time hook — Subscribe to WebSocket topics
  * @param {string} topic - Topic to subscribe to (e.g., 'sensor_data', 'tasks')
  * @param {string} filter - Optional filter (e.g., site_id)
  * @param {number} interval - Update interval in ms
@@ -104,29 +103,33 @@ export const useWebSocketStatus = () => {
 
 /**
  * Hook for real-time sensor data
+ * Interval: 60s (optimized from 10s to reduce Firebase reads)
  */
-export const useRealtimeSensorData = (siteId = null, interval = 10000) => {
+export const useRealtimeSensorData = (siteId = null, interval = 60000) => {
     return useRealtime('sensor_data', siteId, interval);
 };
 
 /**
  * Hook for real-time tasks
+ * Interval: 5min (optimized from 1min to reduce Firebase reads)
  */
-export const useRealtimeTasks = (siteId = null, interval = 60000) => {
+export const useRealtimeTasks = (siteId = null, interval = 300000) => {
     return useRealtime('tasks', siteId, interval);
 };
 
 /**
  * Hook for real-time system metrics
+ * Interval: 2min (optimized from 30s to reduce Firebase reads)
  */
-export const useRealtimeSystemMetrics = (interval = 30000) => {
+export const useRealtimeSystemMetrics = (interval = 120000) => {
     return useRealtime('system_metrics', null, interval);
 };
 
 /**
  * Hook for real-time financial data
+ * Interval: 10min (optimized from 5min to reduce Firebase reads)
  */
-export const useRealtimeFinancialData = (siteId = null, interval = 300000) => {
+export const useRealtimeFinancialData = (siteId = null, interval = 600000) => {
     return useRealtime('financial_data', siteId, interval);
 };
 
@@ -138,7 +141,7 @@ export const useRealtimeProgramGoals = (interval = 3600000) => {
 };
 
 /**
- * Composite hook - Combine multiple real-time data sources
+ * Composite hook — Combine multiple real-time data sources
  */
 export const useRealtimeDashboard = (siteId = null) => {
     const sensorData = useRealtimeSensorData(siteId);

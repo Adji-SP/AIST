@@ -6,7 +6,7 @@
  */
 class ApiClient {
     constructor(baseUrl = null) {
-        this.baseUrl = baseUrl || process.env.REACT_APP_API_URL || `http://localhost:${process.env.API_PORT || 3001}`;
+        this.baseUrl = baseUrl || process.env.REACT_APP_API_URL || 'http://localhost:3001';
     }
 
     /**

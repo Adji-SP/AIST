@@ -11,8 +11,8 @@ import { Leaf, Thermometer, Droplet, Wind, Sun, Activity, SlidersHorizontal, Upl
 import Header from '../layout/header';
 import Sidebar from '../layout/sidebar';
 import keylimeBackground from '../images/image.png';
-import { useApi } from '../../hook/useApiClean';
-import { useSensorData as useFirestoreSensorData, useFinancialData as useFirestoreFinancialData, useFirestoreMutations } from '../../hook/useFirestoreClean';
+import { useApi } from '@lib/client/hooks/useApi';
+import { useSensorData as useFirestoreSensorData, useFinancialData as useFirestoreFinancialData, useFirestoreMutations } from '@lib/client/hooks/useFirestore';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, RadialLinearScale, Title, Tooltip, Legend, Filler);
 
@@ -82,7 +82,7 @@ const FileUploader = ({ onFileUpload, isLoading }) => {
             error: (err) => { setStatus('error'); setErrorMessage(`CSV Parsing Error: ${err.message}`); }
         });
     };
-    
+
     const handleDragEvents = (e, type) => { if (isLoading) return; e.preventDefault(); e.stopPropagation(); if (type === 'over') setStatus('dragging'); else if (type === 'leave') setStatus('idle'); };
     const handleDrop = (e) => { if (isLoading) return; handleDragEvents(e, 'leave'); handleFileProcess(e.dataTransfer.files[0]); };
     const handleRemoveFile = () => { setFile(null); setStatus('idle'); setErrorMessage(''); };
@@ -157,7 +157,7 @@ const DataPage = () => {
     // Real-time sensor data with Firestore real-time updates
     const { getSensorData, loading: apiLoading } = useApi();
     const siteId = 'site_a_3_acres';
-    
+
     // Use Firestore hooks for real-time data
     const firestoreSensorData = useFirestoreSensorData(siteId, 30);
     const firestoreFinancialData = useFirestoreFinancialData(siteId, 10);
@@ -242,12 +242,12 @@ const DataPage = () => {
 
             const results = await Promise.all(uploadPromises);
             const successCount = results.filter(r => r.success).length;
-            
+
             console.log(`✅ CSV upload completed: ${successCount}/${csvRows.length} rows saved`);
-            
+
             // Store CSV data for metrics and charts
             setCsvData(csvRows);
-            
+
             // Persist CSV data to localStorage
             try {
                 localStorage.setItem('ipcc_csv_data', JSON.stringify(csvRows));
@@ -255,7 +255,7 @@ const DataPage = () => {
             } catch (error) {
                 console.warn('Failed to save CSV data to localStorage:', error);
             }
-            
+
             return successCount > 0;
         } catch (error) {
             console.error('❌ CSV upload failed:', error);
@@ -296,12 +296,12 @@ const DataPage = () => {
             console.log('🔥 Using Firestore sensor data:', firestoreSensorData.data.length, 'records');
             return firestoreSensorData.data;
         }
-        
+
         if (fallbackSensorData) {
             console.log('📡 Using API fallback sensor data:', fallbackSensorData.length, 'records');
             return fallbackSensorData;
         }
-        
+
         console.log('🎭 Using dummy sensor data for demo');
         return generateDummyData();
     }, [firestoreSensorData.data, fallbackSensorData]);
@@ -373,7 +373,7 @@ const DataPage = () => {
                 revenue: latest.revenue || 15500
             };
         }
-        
+
         console.log('💰 Using default financial data');
         return {
             convCost: 5330,
@@ -404,7 +404,7 @@ const DataPage = () => {
     const processedData = useMemo(() => {
         if (!appConfig || currentSensorData.length === 0) return { latestReading: {}, mainLineChartData: { labels: [], datasets: [] }, radarData: { labels: [], datasets: [] }, nutrientData: { labels: [], datasets: [] }, soilHealthTrendData: { labels: [], datasets: [] } };
         const { palette } = appConfig;
-        
+
         // Use first row of CSV data for metrics (as requested), or latest sensor data as fallback
         const latestReading = csvData.length > 0 ? {
             temperature: parseFloat(csvData[0].temperature || csvData[0].Temperature || csvData[0]['Temperature (C)'] || 0) || 25.5,
@@ -415,78 +415,78 @@ const DataPage = () => {
             potassium: parseFloat(csvData[0].potassium || csvData[0].K || 0) || 195.7,
             organic_matter: parseFloat(csvData[0].organic_matter || csvData[0]['Organic Matter (%)'] || csvData[0].om || 0) || 4.2
         } : currentSensorData[currentSensorData.length - 1];
-        
+
         const labels = currentSensorData.map((d, i) => csvData.length > 0 ? `Row ${i + 1}` : new Date(d.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }));
-        
+
         return {
             latestReading,
-            mainLineChartData: { 
-                labels, 
+            mainLineChartData: {
+                labels,
                 datasets: [
-                    { 
-                        label: 'Selected Metric', 
-                        data: currentSensorData.map(d => parseFloat(d[selectedMetric]) || 0), 
-                        borderColor: palette.primary, 
-                        backgroundColor: palette.primary_transparent, 
-                        fill: true, 
-                        tension: 0.4, 
-                        pointRadius: 1 
-                    }, 
-                    { 
-                        label: '7-Day Moving Average', 
+                    {
+                        label: 'Selected Metric',
+                        data: currentSensorData.map(d => parseFloat(d[selectedMetric]) || 0),
+                        borderColor: palette.primary,
+                        backgroundColor: palette.primary_transparent,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 1
+                    },
+                    {
+                        label: '7-Day Moving Average',
                         data: currentSensorData.map((_, i, arr) => {
                             const slice = arr.slice(Math.max(0, i - 6), i + 1);
                             const sum = slice.reduce((acc, val) => acc + (parseFloat(val[selectedMetric]) || 0), 0);
                             return (sum / Math.min(i + 1, 7)).toFixed(1);
-                        }), 
-                        borderColor: palette.secondary, 
-                        borderDash: [5, 5], 
-                        fill: false, 
-                        tension: 0.4, 
-                        pointRadius: 0 
+                        }),
+                        borderColor: palette.secondary,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 0
                     }
-                ] 
+                ]
             },
-            radarData: { 
-                labels: ['Health', 'Humidity', 'Nitrogen', 'Phosphorus', 'Potassium', 'Organic Matter'], 
+            radarData: {
+                labels: ['Health', 'Humidity', 'Nitrogen', 'Phosphorus', 'Potassium', 'Organic Matter'],
                 datasets: [{
-                    label: 'Current Performance (Avg)', 
+                    label: 'Current Performance (Avg)',
                     data: ['soil_health', 'humidity', 'nitrogen', 'phosphorus', 'potassium', 'organic_matter'].map(metric => {
                         const slice = currentSensorData.slice(-7);
                         const sum = slice.reduce((sum, d) => sum + (parseFloat(d[metric]) || 0), 0);
                         return (sum / Math.max(1, Math.min(7, currentSensorData.length))).toFixed(1);
-                    }), 
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)', 
-                    borderColor: '#3b82f6', 
-                    borderWidth: 2 
-                }] 
+                    }),
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 2
+                }]
             },
-            nutrientData: { 
-                labels: ['Nitrogen', 'Phosphorus', 'Potassium'], 
-                datasets: [{ 
-                    label: 'Average Level (ppm)', 
+            nutrientData: {
+                labels: ['Nitrogen', 'Phosphorus', 'Potassium'],
+                datasets: [{
+                    label: 'Average Level (ppm)',
                     data: ['nitrogen', 'phosphorus', 'potassium'].map(nutrient => {
                         const sum = currentSensorData.reduce((s, d) => s + (parseFloat(d[nutrient]) || 0), 0);
                         return (sum / currentSensorData.length).toFixed(1);
-                    }), 
-                    backgroundColor: ['#22c55e', '#f59e0b', '#8b5cf6'] 
-                }] 
+                    }),
+                    backgroundColor: ['#22c55e', '#f59e0b', '#8b5cf6']
+                }]
             },
-            soilHealthTrendData: { 
-                labels, 
-                datasets: [{ 
-                    label: 'Soil Health', 
-                    data: currentSensorData.map(d => parseFloat(d.soil_health) || 0), 
-                    borderColor: palette.secondary, 
-                    backgroundColor: palette.secondary_transparent, 
-                    fill: true, 
-                    tension: 0.3, 
-                    pointRadius: 0 
-                }] 
+            soilHealthTrendData: {
+                labels,
+                datasets: [{
+                    label: 'Soil Health',
+                    data: currentSensorData.map(d => parseFloat(d.soil_health) || 0),
+                    borderColor: palette.secondary,
+                    backgroundColor: palette.secondary_transparent,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0
+                }]
             }
         };
     }, [currentSensorData, selectedMetric, appConfig, csvData]);
-    
+
     const comparisonChartsData = useMemo(() => {
         if (!appConfig) return { yieldChartData: {}, costBenefitChartData: {} };
         const { conventional, regenerative } = appConfig.baseValues;
@@ -504,7 +504,7 @@ const DataPage = () => {
         if (!appConfig || landAreaInput <= 0) {
             return { totalRegenerativeAreaHa: 0, requiredMicroalgae: 0, projectedHarvest: 0, operationalCost: 0 };
         }
-        
+
         // 1. Hitung total luas lahan regeneratif
         const totalRegenerativeAreaHa = regenerativeFieldCount * landAreaInput;
 
@@ -533,7 +533,7 @@ const DataPage = () => {
 
     // LAYER 4: PRESENTATION
     if (loading.config || loading.sensorData) return <div className="flex items-center justify-center min-h-screen bg-slate-50"><LoaderCircle className="w-12 h-12 text-green-600 animate-spin" /><p className="ml-4 text-lg font-semibold text-slate-700">Loading Dashboard Data...</p></div>;
-    
+
     return (
         <div className="min-h-screen bg-slate-50 flex">
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!isSidebarCollapsed)} />
@@ -541,21 +541,18 @@ const DataPage = () => {
                 <Header onMenuClick={() => setSidebarOpen(true)} selectedGarden={appConfig.siteProfile.name} onGardenChange={() => { }} />
                 <main className="flex-1 p-4 sm:p-6 overflow-auto">
                     {/* Firestore Connection Status */}
-                    <div className={`mb-4 p-3 border rounded-lg flex items-center gap-2 ${
-                        !firestoreSensorData.loading && !firestoreSensorData.error ? 'bg-green-50 border-green-200' :
-                        firestoreSensorData.loading ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
-                    }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                            !firestoreSensorData.loading && !firestoreSensorData.error ? 'bg-green-500 animate-pulse' :
-                            firestoreSensorData.loading ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
-                        }`}></div>
-                        <span className={`font-medium ${
-                            !firestoreSensorData.loading && !firestoreSensorData.error ? 'text-green-700' :
-                            firestoreSensorData.loading ? 'text-yellow-700' : 'text-red-700'
+                    <div className={`mb-4 p-3 border rounded-lg flex items-center gap-2 ${!firestoreSensorData.loading && !firestoreSensorData.error ? 'bg-green-50 border-green-200' :
+                            firestoreSensorData.loading ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
                         }`}>
+                        <div className={`w-2 h-2 rounded-full ${!firestoreSensorData.loading && !firestoreSensorData.error ? 'bg-green-500 animate-pulse' :
+                                firestoreSensorData.loading ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
+                            }`}></div>
+                        <span className={`font-medium ${!firestoreSensorData.loading && !firestoreSensorData.error ? 'text-green-700' :
+                                firestoreSensorData.loading ? 'text-yellow-700' : 'text-red-700'
+                            }`}>
                             {!firestoreSensorData.loading && !firestoreSensorData.error ? '🔥 Firestore Connected - Real-time updates active' :
-                             firestoreSensorData.loading ? '⏳ Connecting to Firestore...' : 
-                             `❌ Using Fallback Data - ${firestoreSensorData.error?.message || 'Connection failed'}`}
+                                firestoreSensorData.loading ? '⏳ Connecting to Firestore...' :
+                                    `❌ Using Fallback Data - ${firestoreSensorData.error?.message || 'Connection failed'}`}
                         </span>
                     </div>
                     {loading && (
@@ -583,7 +580,7 @@ const DataPage = () => {
 
                     <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                         <h2 className="text-2xl font-bold text-slate-800 mb-6">Regenerative Farming Simulation</h2>
-                        
+
                         <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-8">
                             <h3 className="text-lg font-bold text-slate-700 mb-4">Step 1: Define Regenerative Fields</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
@@ -603,7 +600,7 @@ const DataPage = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div>
                             <h3 className="text-lg font-bold text-slate-700 mb-4">Step 2: Review Simulation Results</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

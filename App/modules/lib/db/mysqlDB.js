@@ -91,7 +91,7 @@ class QueryBuilder {
         if (this.whereConditions.length === 0) {
             return this.where(field, operator, value);
         }
-        
+
         if (typeof field === 'object' && field !== null) {
             const orConditions = [];
             for (const [key, val] of Object.entries(field)) {
@@ -202,7 +202,7 @@ class QueryBuilder {
     async get() {
         const sql = this._buildSelectQuery();
         const params = [...this.whereParams, ...this.havingParams];
-        
+
         if (this.limitClause) {
             const limitParts = this.limitClause.split(', ');
             params.push(...limitParts.map(p => parseInt(p)));
@@ -221,13 +221,13 @@ class QueryBuilder {
     async count(field = '*') {
         const originalSelect = this.selectFields;
         this.selectFields = field === '*' ? 'COUNT(*) as count' : `COUNT(\`${field}\`) as count`;
-        
+
         const sql = this._buildSelectQuery();
         const params = [...this.whereParams, ...this.havingParams];
-        
+
         const result = await this.database.query(sql, params);
         this.selectFields = originalSelect; // Restore original select
-        
+
         return result[0] ? result[0].count : 0;
     }
 
@@ -251,13 +251,13 @@ class QueryBuilder {
         const columns = Object.keys(data);
         const values = Object.values(data);
         const setClause = columns.map(col => `\`${col}\` = ?`).join(', ');
-        
+
         let sql = `UPDATE \`${this.tableName}\` SET ${setClause}`;
-        
+
         if (this.whereConditions.length > 0) {
             sql += ` WHERE ${this.whereConditions.join(' AND ')}`;
         }
-        
+
         const params = [...values, ...this.whereParams];
         return await this.database.query(sql, params);
     }
@@ -265,42 +265,42 @@ class QueryBuilder {
     // DELETE method
     async delete() {
         let sql = `DELETE FROM \`${this.tableName}\``;
-        
+
         if (this.whereConditions.length > 0) {
             sql += ` WHERE ${this.whereConditions.join(' AND ')}`;
         }
-        
+
         return await this.database.query(sql, this.whereParams);
     }
 
     // Build SELECT query
     _buildSelectQuery() {
         let sql = `SELECT ${this.selectFields} FROM \`${this.tableName}\``;
-        
+
         if (this.joinClauses.length > 0) {
             sql += ` ${this.joinClauses.join(' ')}`;
         }
-        
+
         if (this.whereConditions.length > 0) {
             sql += ` WHERE ${this.whereConditions.join(' AND ')}`;
         }
-        
+
         if (this.groupByClause) {
             sql += ` GROUP BY ${this.groupByClause}`;
         }
-        
+
         if (this.havingConditions.length > 0) {
             sql += ` HAVING ${this.havingConditions.join(' AND ')}`;
         }
-        
+
         if (this.orderByClause) {
             sql += ` ORDER BY ${this.orderByClause}`;
         }
-        
+
         if (this.limitClause) {
             sql += ` LIMIT ${this.limitClause}`;
         }
-        
+
         return sql;
     }
 
@@ -461,7 +461,7 @@ class Database {
 
     check_up(data) {
         if (!data) {
-            return res.status(500).json({ success: false, error: "Database not initialized for controller." });
+            return { success: false, error: "Database not initialized for controller." };
         }
     }
 }

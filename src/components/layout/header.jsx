@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
-// Tambahkan 'useLocation' untuk membaca URL browser
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Bell, Menu } from 'lucide-react';
+import { Bell, Menu, LogOut, Shield } from 'lucide-react';
+import { useAuth } from '../../auth/AuthContext';
 
 // Fungsi bantuan getGreeting (tidak berubah)
 const getGreeting = () => {
@@ -11,76 +11,40 @@ const getGreeting = () => {
   return "Good Evening";
 };
 
-// Komponen ToggleGardenSelector (tidak berubah, sudah bagus)
-// eslint-disable-next-line no-unused-vars
-const ToggleGardenSelector = ({ selected, onSelectionChange, options }) => {
-    const [option1, option2] = options;
-    return (
-        <div className="relative flex w-60 items-center rounded-full bg-green-600 p-1">
-            <span
-                className={`absolute h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out`}
-                style={{
-                    transform: selected === option1 ? 'translateX(0)' : 'translateX(calc(100% + 4px))'
-                }}
-            />
-            <button
-                onClick={() => onSelectionChange(option1)}
-                className={`relative z-10 flex-1 rounded-full py-1.5 text-sm font-bold transition-colors duration-300 ease-in-out focus:outline-none`}
-                style={{ color: selected === option1 ? '#22c55e' : 'white' }}
-            >
-              {option1}
-            </button>
-            <button
-              onClick={() => onSelectionChange(option2)}
-              className={`relative z-10 flex-1 rounded-full py-1.5 text-sm font-bold transition-colors duration-300 ease-in-out focus:outline-none`}
-              style={{ color: selected === option2 ? '#22c55e' : 'white' }}
-            >
-                {option2}
-            </button>
-        </div>
-    );
-};
-
-
-const Header = ({ 
-  onMenuClick,
-  notifications = 15,
-  user = { initials: "VG", name: "Admin" }
-}) => {
+const Header = ({ onMenuClick, notifications = 15 }) => {
   const navigate = useNavigate();
-  const location = useLocation(); // Hook untuk mendapatkan info URL
+  const location = useLocation();
+  const { user, role, logout } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
   const greeting = getGreeting();
-  // Ubah nama opsi agar cocok dengan nama file/komponen
-  // eslint-disable-next-line no-unused-vars
-  const gardenOptions = ['Kasturi Lime', 'Key Lime'];
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+  const email = user?.email || '';
+  const initials = displayName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
-  // PERUBAHAN 1: Hapus `useState`. Tentukan kebun aktif dari URL.
-  // Ini memastikan toggle selalu sinkron dengan halaman yang ditampilkan.
-  // eslint-disable-next-line no-unused-vars
-  const selectedGarden = useMemo(() => {
-    if (location.pathname.includes('/key-lime')) {
-      return 'Key Lime';
-    }
-    // Jadikan Kasturi sebagai default untuk semua rute overview lainnya
-    return 'Kasturi Lime';
-  }, [location.pathname]);
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  // PERUBAHAN 2: Fungsi ini sekarang akan mengubah URL, bukan state lokal.
-  // eslint-disable-next-line no-unused-vars
-  const handleGardenChange = (garden) => {
-    if (garden === 'Key Lime') {
-      navigate('/overview/key-lime');
-    } else if (garden === 'Kasturi Lime') {
-      navigate('/overview/kasturi-lime');
-    }
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-slate-200 px-4 sm:px-6 py-3">
+    <header className="bg-white shadow-sm border-b border-slate-200 px-4 sm:px-6 py-3 relative z-50">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={onMenuClick} 
+          <button
+            onClick={onMenuClick}
             className="lg:hidden p-2 rounded-full hover:bg-slate-100 transition-colors"
             aria-label="Open menu"
           >
@@ -88,21 +52,16 @@ const Header = ({
           </button>
           <div>
             <h1 className="text-xl font-bold text-slate-800">
-              {greeting}, <span className="font-semibold text-green-600">{user.name}</span>!
+              {greeting}, <span className="font-semibold text-green-600">{displayName}</span>!
             </h1>
             <p className="hidden md:block text-sm text-slate-500">
               Welcome to your agricultural command center.
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-4">
-          {/* <ToggleGardenSelector
-            // PERUBAHAN 3: Gunakan state yang didapat dari URL
-            selected={selectedGarden}
-            onSelectionChange={handleGardenChange}
-            options={gardenOptions}
-          /> */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button className="relative p-2 rounded-full hover:bg-slate-100 transition-colors" aria-label="Notifications">
               <Bell className="w-6 h-6 text-slate-500" />
               {notifications > 0 && (
@@ -111,9 +70,51 @@ const Header = ({
                 </span>
               )}
             </button>
-            <button className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center ring-2 ring-offset-2 ring-offset-white ring-transparent hover:ring-green-200 transition-all" aria-label="User profile">
-              <span className="text-white text-sm font-bold">{user.initials}</span>
-            </button>
+
+            {/* Profile Dropdown Container */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center ring-2 ring-offset-2 ring-offset-white ring-transparent hover:ring-green-300 transition-all focus:outline-none focus:ring-green-400"
+                aria-label="User profile"
+                aria-expanded={dropdownOpen}
+              >
+                <span className="text-white text-sm font-bold">{initials}</span>
+              </button>
+
+              {/* Dropdown Menu */}
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden origin-top-right transition-all animate-fade-in-up">
+                  {/* User Info Header */}
+                  <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <span className="text-white text-sm font-bold">{initials}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{displayName}</p>
+                      <p className="text-xs text-slate-500 truncate">{email}</p>
+                    </div>
+                    {role === 'superadmin' && (
+                      <span title="Super Admin" className="flex-shrink-0">
+                        <Shield className="w-4 h-4 text-amber-500" />
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="p-2">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

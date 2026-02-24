@@ -5,7 +5,7 @@ const cors = require('cors');
 const LifecycleManager = require('../../lib/base/LifecycleManager');
 const { getInstance: getEventBus } = require('../../lib/events/EventBus');
 const { getInstance: getLogger } = require('../../lib/services/LoggingService');
-const alert = require('../../lib/alert'); 
+const alert = require('../../lib/alert');
 
 class APIServer extends LifecycleManager {
     /**
@@ -34,7 +34,7 @@ class APIServer extends LifecycleManager {
     setupMiddleware() {
         this.app.use(cors());
         this.app.use(bodyParser.json());
-        
+
         // Add request logging middleware
         this.app.use((req, res, next) => {
             this.logger.debug(`${req.method} ${req.url}`, { ip: req.ip });
@@ -60,7 +60,7 @@ class APIServer extends LifecycleManager {
                 this.server = this.app.listen(this.port, () => {
                     this.logger.info('API server started successfully', { port: this.port });
                     alert.api.serverStarted(this.port);
-                    
+
                     this.eventBus.emit('api:started', { port: this.port, server: this });
                     resolve();
                 });
@@ -80,8 +80,8 @@ class APIServer extends LifecycleManager {
 
     setupHealthCheck() {
         this.app.get('/api/health', (req, res) => {
-            res.json({ 
-                success: true, 
+            res.json({
+                success: true,
                 message: 'API server is running',
                 uptime: process.uptime(),
                 timestamp: new Date().toISOString()

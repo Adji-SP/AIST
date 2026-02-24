@@ -1,7 +1,7 @@
-// src/hook/useFirestoreClean.js
-// CLEAN React hooks - Just handles React state, uses shared library for logic
+// App/modules/lib/client/hooks/useFirestore.js
+// React hook for Firestore — thin wrapper around App's FirebaseClient with React state
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getFirebaseClient } from '@lib/client/firebaseClient';
+import { getFirebaseClient } from '../firebaseClient';
 
 // Cache for Firestore data to prevent unnecessary loading states
 const dataCache = new Map();
@@ -10,7 +10,7 @@ const getCacheKey = (collectionName, options) => {
 };
 
 /**
- * Clean Firestore hook - Real-time subscription to a collection
+ * Clean Firestore hook — Real-time subscription to a collection
  * All Firebase logic is in the shared library
  * Now with caching to prevent re-loading on component remount
  */
@@ -71,7 +71,7 @@ export const useFirestore = (collectionName, options = {}) => {
 };
 
 /**
- * Firestore mutations hook - CRUD operations
+ * Firestore mutations hook — CRUD operations
  */
 export const useFirestoreMutations = (collectionName) => {
     const [loading, setLoading] = useState(false);
@@ -120,13 +120,13 @@ export const useFirestoreMutations = (collectionName) => {
         }
     }, [collectionName, firebaseClient]);
 
-    return { add, update, remove, loading, error };
+    return { add, addDocument: add, update, remove, loading, error };
 };
 
 // === Specialized Hooks (Domain-specific) ===
 
 /**
- * Hook for sensor data - Uses generic useFirestore with specific options
+ * Hook for sensor data — Uses generic useFirestore with specific options
  */
 export const useSensorData = (siteId = null, limit = 50) => {
     const options = {
@@ -182,7 +182,6 @@ export const useTasks = (siteId = null, isCompleted = null) => {
 
 /**
  * Utility to clear the Firestore cache
- * Use this to force a refresh of all data
  */
 export const clearFirestoreCache = () => {
     dataCache.clear();

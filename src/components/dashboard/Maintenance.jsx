@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Header from '../layout/header';
 import Sidebar from '../layout/sidebar';
+import { useTasks, useFirestoreMutations } from '../../../App/modules/lib/client/hooks/useFirestore';
 
 // =================================================================================
 // Data Deskripsi Tugas
@@ -278,59 +279,46 @@ const TaskDetailModal = ({ isOpen, onClose, task, onDelete }) => {
 const TaskSchedulePage = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [allEvents, setAllEvents] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
 
-    useEffect(() => {
-        let generatedEvents = [];
-        const today = new Date();
-        for (let i = -1; i < 12; i++) {
-            const targetDate = new Date(today.getFullYear(), today.getMonth() + i, 1);
-            const year = targetDate.getFullYear();
-            const month = targetDate.getMonth();
-            const isConventional = year < 2024 || (year === 2024 && month < 8);
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(year, month, day);
-                const idPrefix = `${date.toISOString()}`;
+    // Fetch tasks from Firestore (real-time)
+    const { data: firestoreTasks, loading } = useTasks();
+    const { addDocument, update, remove } = useFirestoreMutations('tasks');
 
-                if (isConventional) {
-                    if ([10, 20, 30].includes(day)) {
-                        generatedEvents.push({ id: `${idPrefix}-pesticide`, date, title: 'Apply Pesticide + Foliar', type: 'conventional', category: 'Agrochemicals', isCompleted: false, description: TASK_DESCRIPTIONS.conventional['Apply Pesticide + Foliar'] });
-                    }
-                    if (day === 14) {
-                        generatedEvents.push({ id: `${idPrefix}-fertilizer`, date, title: 'Apply Fertilizer', type: 'conventional', category: 'Fertilizer', isCompleted: false, description: TASK_DESCRIPTIONS.conventional.Fertilizer_14 });
-                    }
-                    if (day === 24) {
-                        generatedEvents.push({ id: `${idPrefix}-fertilizer-organic`, date, title: 'Apply Fertilizer', type: 'conventional', category: 'Fertilizer', isCompleted: false, description: TASK_DESCRIPTIONS.conventional.Fertilizer_24 });
-                    }
-                } else { // Regenerative
-                    if ([1, 15].includes(day)) {
-                        generatedEvents.push({ id: `${idPrefix}-pesticide-regen`, date, title: 'Apply Pesticide', type: 'regenerative', category: 'Pesticides', isCompleted: false, description: TASK_DESCRIPTIONS.regenerative['Apply Pesticide'] });
-                    }
-                    if (day === 24) {
-                        generatedEvents.push({ id: `${idPrefix}-microalgae`, date, title: 'Inject Microalgae', type: 'regenerative', category: 'Soil Agent', isCompleted: false, description: TASK_DESCRIPTIONS.regenerative['Inject Microalgae'] });
-                    }
-                }
+    // Mapped tasks ensuring correct Date objects
+    const allEvents = (firestoreTasks || []).map(t => ({
+        ...t,
+        date: t.date?.toDate ? t.date.toDate() : new Date(t.date || Date.now()), // Handle Firestore Timestamps
+    }));
+
+
+
+
+    const handleToggleTask = async (taskId) => {
+        const taskToUpdate = allEvents.find(event => event.id === taskId);
+        if (taskToUpdate) {
+            try {
+                await update(taskId, { isCompleted: !taskToUpdate.isCompleted });
+            } catch (error) {
+                console.error("Failed to toggle task:", error);
             }
         }
-        setAllEvents(generatedEvents);
-    }, []);
-
-
-    const handleToggleTask = (taskId) => {
-        setAllEvents(prevEvents =>
-            prevEvents.map(event =>
-                event.id === taskId
-                    ? { ...event, isCompleted: !event.isCompleted }
-                    : event
-            )
-        );
     };
 
-    const handleAddManualEvent = (newEvent) => {
-        setAllEvents(prevEvents => [...prevEvents, newEvent].sort((a, b) => new Date(a.date) - new Date(b.date)));
+    const handleAddManualEvent = async (newEvent) => {
+        try {
+            await addDocument({
+                title: newEvent.title,
+                description: newEvent.description,
+                date: newEvent.date,
+                type: newEvent.type,
+                category: newEvent.category,
+                isCompleted: newEvent.isCompleted,
+            });
+        } catch (error) {
+            console.error("Failed to add task:", error);
+        }
     };
 
     const handleEventClick = (event) => {
@@ -338,10 +326,14 @@ const TaskSchedulePage = () => {
         setIsModalOpen(true);
     };
 
-    const handleDeleteTask = (taskId) => {
-        setAllEvents(prevEvents => prevEvents.filter(event => event.id !== taskId));
-        setIsModalOpen(false);
-        setSelectedTask(null);
+    const handleDeleteTask = async (taskId) => {
+        try {
+            await remove(taskId);
+            setIsModalOpen(false);
+            setSelectedTask(null);
+        } catch (error) {
+            console.error("Failed to delete task:", error);
+        }
     };
 
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -368,22 +360,28 @@ const TaskSchedulePage = () => {
                 <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <TaskMetricCard value={upcomingThisWeek} label="Upcoming (Next 7 Days)" icon={CalendarClock} color="yellow" />
-                        <TaskMetricCard value={overdueTasks.length} label="Overdue Tasks" icon={CircleAlert} color="red" />
-                        <TaskMetricCard value={completedThisMonth} label="Completed (This Month)" icon={CheckCheck} color="green" />
-                        <TaskMetricCard value={totalTasksThisMonth} label="Total Tasks (This Month)" icon={ListTodo} color="slate" />
+                        <TaskMetricCard value={loading ? "..." : upcomingThisWeek} label="Upcoming (Next 7 Days)" icon={CalendarClock} color="yellow" />
+                        <TaskMetricCard value={loading ? "..." : overdueTasks.length} label="Overdue Tasks" icon={CircleAlert} color="red" />
+                        <TaskMetricCard value={loading ? "..." : completedThisMonth} label="Completed (This Month)" icon={CheckCheck} color="green" />
+                        <TaskMetricCard value={loading ? "..." : totalTasksThisMonth} label="Total Tasks (This Month)" icon={ListTodo} color="slate" />
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                        <div className="xl:col-span-2">
-                            <TaskCalendar events={allEvents} onEventClick={handleEventClick} />
-                            <ManualEventInput onAddEvent={handleAddManualEvent} />
+                    {loading ? (
+                        <div className="flex justify-center items-center py-24">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                         </div>
-                        <div className="flex flex-col gap-8">
-                            <UpcomingSchedule events={allEvents.filter(e => !e.isCompleted)} />
-                            <OverdueTasksCard tasks={overdueTasks} onToggle={handleToggleTask} />
+                    ) : (
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                            <div className="xl:col-span-2">
+                                <TaskCalendar events={allEvents} onEventClick={handleEventClick} />
+                                <ManualEventInput onAddEvent={handleAddManualEvent} />
+                            </div>
+                            <div className="flex flex-col gap-8">
+                                <UpcomingSchedule events={allEvents.filter(e => !e.isCompleted)} />
+                                <OverdueTasksCard tasks={overdueTasks} onToggle={handleToggleTask} />
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </main>
             </div>
             <TaskDetailModal

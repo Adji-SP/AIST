@@ -11,7 +11,7 @@ class WebSocketClient {
         config = config || {};
 
         this.config = {
-            url: config.url || process.env.REACT_APP_WS_URL || `ws://localhost:${process.env.WEBSOCKET_PORT || 8080}`,
+            url: config.url || process.env.REACT_APP_WS_URL || 'ws://localhost:8080',
             reconnectDelay: config.reconnectDelay || 5000,
             maxReconnectAttempts: config.maxReconnectAttempts || 5,
             heartbeatInterval: config.heartbeatInterval || 30000,
