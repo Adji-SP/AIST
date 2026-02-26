@@ -1,52 +1,13 @@
 // components/ui/Alerts.jsx
 import React from 'react';
 
-const Alerts = ({ 
+const Alerts = ({
   alerts = [],
   title = "Alerts",
   onViewAll,
   maxHeight = "400px"
 }) => {
-  // Data contoh default jika tidak ada lansiran yang diberikan
-  const defaultAlerts = [
-    {
-      id: 1,
-      title: "pH Level Too High",
-      description: "Sensor #PH001 • Current: 8.2",
-      severity: "critical",
-      color: "red"
-    },
-    {
-      id: 2,
-      title: "Soil Moisture Low",
-      description: "Garden Section A • Current: 45%",
-      severity: "warning",
-      color: "orange"
-    },
-    {
-      id: 3,
-      title: "Temperature Fluctuation",
-      description: "Greenhouse B • Variance: ±5°C",
-      severity: "info",
-      color: "blue"
-    },
-    {
-      id: 4,
-      title: "High Humidity Detected",
-      description: "Zone 3 • Current: 95%",
-      severity: "caution",
-      color: "yellow"
-    },
-    {
-      id: 5,
-      title: "Wind Speed Too High",
-      description: "External Sensor • Current: 15m/s",
-      severity: "critical",
-      color: "red"
-    }
-  ];
-
-  const alertsToShow =  defaultAlerts;
+  const alertsToShow = alerts;
   const totalAlerts = alertsToShow.length;
 
   const getSeverityStyles = (color) => {
@@ -94,22 +55,22 @@ const Alerts = ({
           {totalAlerts}
         </span>
       </div>
-      
-      <div 
+
+      <div
         className="flex-grow space-y-3 overflow-y-auto pr-2"
         style={{ maxHeight }}
       >
         {alertsToShow.map((alert) => {
-          const styles = getSeverityStyles(alert.color || 'blue');
-          
+          const styles = getSeverityStyles(alert.color || (alert.severity === 'critical' ? 'red' : alert.severity === 'warning' ? 'orange' : 'blue'));
+
           return (
-            <div 
-              key={alert.id} 
+            <div
+              key={alert.id}
               className={`flex items-center justify-between p-3 rounded-lg border-l-4 ${styles.bg} ${styles.border}`}
             >
               <div>
-                <p className="font-semibold text-gray-800 text-sm">{alert.title}</p>
-                <p className="text-xs text-gray-500">{alert.description}</p>
+                <p className="font-semibold text-gray-800 text-sm">{alert.title || alert.type}</p>
+                <p className="text-xs text-gray-500">{alert.description || alert.message}</p>
               </div>
               <span className={`text-xs font-medium py-1 px-3 rounded-full ${styles.badgeBg} ${styles.badgeText}`}>
                 {alert.severity ? (alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)) : 'Info'}
@@ -117,11 +78,21 @@ const Alerts = ({
             </div>
           );
         })}
+
+        {alertsToShow.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-40 text-center">
+            <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mb-3">
+              <span className="text-green-500 font-bold text-xl">✓</span>
+            </div>
+            <p className="text-slate-600 font-semibold text-sm">No Active Alerts</p>
+            <p className="text-slate-400 text-xs mt-1">Everything is running smoothly</p>
+          </div>
+        )}
       </div>
-      
+
       {onViewAll && (
         <div className="mt-auto pt-4 text-center">
-          <button 
+          <button
             onClick={onViewAll}
             className="text-sm text-blue-700 hover:text-blue-900 font-semibold transition-colors"
           >

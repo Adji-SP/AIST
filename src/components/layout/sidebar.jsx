@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Leaf, X, Home, History, Wrench, Users,
-  LogOut, ChevronsLeft, ChevronsRight, Shield, PenLine
+  LogOut, ChevronsLeft, ChevronsRight, Shield, PenLine, Settings
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
@@ -34,11 +34,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
         {/* Header */}
         <div className="flex items-center p-4 border-b border-slate-200 flex-shrink-0 h-[68px]">
           <div className={`flex items-center space-x-3 overflow-hidden ${isCollapsed ? 'justify-center w-full' : ''}`}>
-            <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Leaf className="w-5 h-5 text-white" />
-            </div>
+            <img src="/assets/logo/LOGO.png" alt="Logo" className="w-8 h-8 object-contain flex-shrink-0" />
             {!isCollapsed && (
-              <span className="text-xl font-bold text-slate-800 whitespace-nowrap">Activities</span>
+              <span className="text-xl font-bold text-slate-800 whitespace-nowrap">Greenara</span>
             )}
           </div>
           <button onClick={onClose} className="lg:hidden text-slate-500 hover:text-slate-800 ml-auto">
@@ -81,6 +79,18 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
               >
                 <PenLine className={`w-5 h-5 flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
                 {!isCollapsed && <span>Landing Editor</span>}
+              </Link>
+            )}
+
+            {/* Admin Portal Link */}
+            {(role === 'admin' || role === 'superadmin') && (
+              <Link
+                to="/admin/dashboard"
+                className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 group text-slate-600 hover:bg-slate-50 hover:text-green-600`}
+                title={isCollapsed ? 'Admin Portal' : undefined}
+              >
+                <Settings className={`w-5 h-5 flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
+                {!isCollapsed && <span>Admin Portal</span>}
               </Link>
             )}
           </nav>

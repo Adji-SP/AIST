@@ -13,6 +13,10 @@ import {
     getDoc,
     setDoc,
     serverTimestamp,
+    collection,
+    query,
+    where,
+    getDocs,
 } from 'firebase/firestore';
 import { Navigate } from 'react-router-dom';
 
@@ -36,24 +40,41 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState(null);
+    const [userDevices, setUserDevices] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                // Fetch role from Firestore users/{uid}
+                // Fetch role from Firestore users/{uid} with a 5-second timeout to prevent infinite hang if blocked
                 try {
+                    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 5000));
+
                     const userDocRef = doc(db, 'users', firebaseUser.uid);
-                    const userDoc = await getDoc(userDocRef);
+                    const userDoc = await Promise.race([getDoc(userDocRef), timeout]);
                     const userData = userDoc.exists() ? userDoc.data() : {};
                     setRole(userData.role || 'user');
+
+                    // Fetch associated devices
+                    const devicesRef = collection(db, 'devices');
+                    const q = query(devicesRef, where('assigned_to_uid', '==', firebaseUser.uid));
+                    const devicesSnap = await Promise.race([getDocs(q), timeout]);
+
+                    // Safely extract device IDs, remove falsy values, and strictly limit to 10 for Firestore 'in' queries
+                    let devices = devicesSnap.docs.map(d => d.data().device_id).filter(id => id);
+                    if (devices.length === 0) devices = ['UNASSIGNED_FALLBACK'];
+                    if (devices.length > 10) devices = devices.slice(0, 10);
+
+                    setUserDevices(devices);
                 } catch {
                     setRole('user');
+                    setUserDevices([]);
                 }
                 setUser(firebaseUser);
             } else {
                 setUser(null);
                 setRole(null);
+                setUserDevices([]);
             }
             setLoading(false);
         });
@@ -105,7 +126,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, role, loading, login, register, logout, db, auth }}>
+        <AuthContext.Provider value={{ user, role, userDevices, loading, login, register, logout, db, auth }}>
             {children}
         </AuthContext.Provider>
     );

@@ -24,8 +24,9 @@ import { getSiteConfig, getSiteOptions } from './siteConfig';
 
 // Hooks
 import { useApi, useSerialConnection } from '@lib/client/hooks/useApi';
-import { useFirestore } from '@lib/client/hooks/useFirestore';
+import { useFirestore, useFirestoreMutations } from '@lib/client/hooks/useFirestore';
 import { useWebSocketStatus } from '@lib/client/hooks/useRealtime';
+import { useAuth } from '../../auth/AuthContext';
 
 // ============================================================
 // Unified Overview Component
@@ -38,37 +39,110 @@ const Overview = () => {
   const siteConfig = useMemo(() => getSiteConfig(siteId), [siteId]);
 
   // --- Connection Hooks ---
-  const { getDataByFilters, error, loading } = useApi();
+  const { error, loading } = useApi();
   const { connected: wsConnected } = useWebSocketStatus();
   const { status: serialStatus, reconnect: serialReconnect } = useSerialConnection();
   const isConnected = !loading && !error;
 
+  // --- Context ---
+  const { userDevices, role } = useAuth();
+
+  // Safe array for Firestore 'in' query (cannot be empty)
+  const safeDeviceIds = userDevices?.length > 0 ? userDevices : ['UNASSIGNED_FALLBACK'];
+
   // --- Firestore Real-time Data ---
+  // We omit `orderBy` to avoid requiring a composite index, returning an unsorted limit,
+  // and then sorting the array locally by timestamp descending.
   const sensorsData = useFirestore('sensors', {
-    where: { field: 'sample_id', operator: '==', value: siteId },
-    orderBy: { field: 'timestamp', direction: 'desc' },
-    limit: 30
+    where: role === 'admin'
+      ? { field: 'sample_id', operator: '==', value: siteId }
+      : { field: 'device_id', operator: 'in', value: safeDeviceIds },
+    limit: 100
   });
 
-  const alertsData = useFirestore('alerts', {
-    where: { field: 'sample_id', operator: '==', value: siteId },
-    orderBy: { field: 'timestamp', direction: 'desc' },
-    limit: 10
+  const alertsDataRaw = useFirestore('alerts', {
+    where: role === 'admin'
+      ? { field: 'sample_id', operator: '==', value: siteId }
+      : { field: 'device_id', operator: 'in', value: safeDeviceIds },
+    limit: 100
   });
 
   const datasetParamData = useFirestore('dataset_param', {
-    where: { field: 'sample_id', operator: '==', value: siteId },
-    orderBy: { field: 'timestamp', direction: 'desc' },
-    limit: 20
+    where: role === 'admin'
+      ? { field: 'sample_id', operator: '==', value: siteId }
+      : { field: 'device_id', operator: 'in', value: safeDeviceIds },
+    limit: 100
   });
 
-  // --- Derived Data ---
-  const sensorData = useMemo(() => sensorsData.data?.length > 0 ? sensorsData.data : [], [sensorsData.data]);
+  const tasksDataRaw = useFirestore('tasks', {
+    where: { field: 'site_id', operator: '==', value: siteId },
+    limit: 50
+  });
+
+  const suggestionsDataRaw = useFirestore('suggestions', {
+    where: { field: 'site_id', operator: '==', value: siteId },
+    limit: 50
+  });
+
+  const { update: updateTask } = useFirestoreMutations('tasks');
+
+  // Helper to safely parse timestamps
+  const getTs = (val) => {
+    if (!val) return 0;
+    if (typeof val.toDate === 'function') return val.toDate().getTime();
+    return new Date(val).getTime() || 0;
+  };
+
+  // --- Derived Data (Locally Sorted) ---
+  const sensorData = useMemo(() => {
+    if (!sensorsData.data?.length) return [];
+    return [...sensorsData.data]
+      .sort((a, b) => getTs(b.timestamp) - getTs(a.timestamp))
+      .slice(0, 30);
+  }, [sensorsData.data]);
+
+  const alertsData = useMemo(() => {
+    const arr = alertsDataRaw.data || [];
+    return [...arr].sort((a, b) => getTs(b.timestamp) - getTs(a.timestamp)).slice(0, 10);
+  }, [alertsDataRaw.data]);
+
+  const datasetParams = useMemo(() => {
+    if (!datasetParamData.data?.length) return [];
+    return [...datasetParamData.data]
+      .sort((a, b) => getTs(b.timestamp) - getTs(a.timestamp))
+      .slice(0, 20);
+  }, [datasetParamData.data]);
+
+  const tasksList = useMemo(() => {
+    const arr = tasksDataRaw.data || [];
+    return [...arr].sort((a, b) => getTs(a.date) - getTs(b.date)).map(t => ({
+      id: t.id,
+      name: t.name || t.title || 'Unknown Task',
+      time: t.time || (t.date ? new Date(getTs(t.date)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Anytime'),
+      progress: t.progress || (t.completed ? 100 : 0),
+      completed: !!t.completed,
+      description: t.description || ''
+    }));
+  }, [tasksDataRaw.data]);
+
+  const dbSuggestions = useMemo(() => {
+    const arr = suggestionsDataRaw.data || [];
+    return [...arr].sort((a, b) => getTs(b.created_at || b.timestamp) - getTs(a.created_at || a.timestamp));
+  }, [suggestionsDataRaw.data]);
+
+  const handleTaskToggle = async (taskId, completed) => {
+    try {
+      await updateTask(taskId, { completed, progress: completed ? 100 : 0 });
+    } catch (e) {
+      console.error('Failed to toggle task:', e);
+    }
+  };
+
   const sensorLoading = sensorsData.loading;
   const sensorError = sensorsData.error;
 
   const latestSensorData = useMemo(() => sensorData?.[0] || null, [sensorData]);
-  const latestDatasetParam = useMemo(() => datasetParamData.data?.[0] || null, [datasetParamData.data]);
+  const latestDatasetParam = useMemo(() => datasetParams?.[0] || null, [datasetParams]);
 
   const lastUpdated = useMemo(() => {
     try {
@@ -88,10 +162,7 @@ const Overview = () => {
   };
 
   // --- Local State ---
-  const [devices, setDevices] = useState([]);
-  const [plantData, setPlantData] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
-  const fetchControllerRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedGarden, setSelectedGarden] = useState(siteConfig.label);
@@ -117,27 +188,27 @@ const Overview = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // --- Additional Data via API ---
-  const fetchAdditionalData = useCallback(async () => {
-    if (!isConnected) return;
-    if (fetchControllerRef.current) fetchControllerRef.current.abort();
-    const controller = new AbortController();
-    fetchControllerRef.current = controller;
-    try {
-      const [devicesResponse, plantResponse] = await Promise.all([
-        getDataByFilters('devices', {}, { orderBy: { column: 'last_seen', direction: 'DESC' } }, { signal: controller.signal }),
-        getDataByFilters('plants', { garden_id: selectedGarden }, { limit: 1 }, { signal: controller.signal }),
-      ]);
-      setDevices(devicesResponse || []);
-      setPlantData(plantResponse?.[0] || null);
-    } catch (err) { if (err.name !== 'AbortError') console.error('Error fetching additional data:', err); }
-  }, [isConnected, selectedGarden, getDataByFilters]);
+  // --- Firestore Real-time Devices & Plants ---
+  const devicesQuery = useFirestore('devices', {
+    orderBy: { field: 'last_seen', direction: 'desc' },
+    ...((role !== 'admin') && { where: { field: 'device_id', operator: 'in', value: safeDeviceIds } })
+  });
+  const devices = useMemo(() => {
+    const arr = devicesQuery.data || [];
+    return arr.map(d => ({
+      id: d.id || d.device_id,
+      name: d.name || `Device ${d.device_id}`,
+      status: d.status || (d.last_seen && (Date.now() - getTs(d.last_seen) < 3600000) ? 'online' : 'offline'),
+      type: d.type || 'sensor',
+      lastUpdate: d.last_seen ? new Date(getTs(d.last_seen)).toLocaleTimeString() : 'Unknown'
+    }));
+  }, [devicesQuery.data]);
 
-  useEffect(() => {
-    fetchAdditionalData();
-    return () => { if (fetchControllerRef.current) fetchControllerRef.current.abort(); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, selectedGarden]);
+  const plantsQuery = useFirestore('plants', {
+    where: { field: 'garden_id', operator: '==', value: siteId },
+    limit: 1
+  });
+  const plantData = plantsQuery.data?.[0] || null;
 
   // --- Yield & Revenue (from siteConfig) ---
   const calculatedYield = useMemo(() => siteConfig.yieldFormula(latestDatasetParam), [siteConfig, latestDatasetParam]);
@@ -208,6 +279,7 @@ const Overview = () => {
           onMenuClick={() => setSidebarOpen(true)}
           selectedGarden={selectedGarden}
           onGardenChange={(garden) => setSelectedGarden(garden)}
+          alerts={alertsData}
         />
 
         {/* Status Bar */}
@@ -266,8 +338,17 @@ const Overview = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Tasks title="Daily Farming Tasks" loading={loading || sensorLoading} />
-                <FarmingSuggestions sensorData={latestSensorData} loading={sensorLoading} />
+                <Tasks
+                  title="Daily Farming Tasks"
+                  tasks={tasksList}
+                  onTaskToggle={handleTaskToggle}
+                  loading={tasksDataRaw.loading}
+                />
+                <FarmingSuggestions
+                  sensorData={latestSensorData}
+                  dbSuggestions={dbSuggestions}
+                  loading={sensorLoading || suggestionsDataRaw.loading}
+                />
               </div>
 
               {/* Chart — sensor collection data */}
@@ -285,7 +366,7 @@ const Overview = () => {
 
             <div className="flex flex-col gap-6">
               <WeatherWidget data={weatherData} loading={!weatherData} onMoreDetailsClick={() => setShowWeatherModal(true)} />
-              <Alerts alerts={alertsData.data || []} onViewAll={() => { }} loading={alertsData.loading} />
+              <Alerts alerts={alertsData || []} onViewAll={() => { }} loading={alertsDataRaw.loading} />
               <DeviceStatus devices={devices} serialStatus={serialStatus} onSerialReconnect={serialReconnect} loading={loading} />
 
               <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
@@ -304,13 +385,6 @@ const Overview = () => {
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     Reconnect Serial
-                  </button>
-                  <button
-                    onClick={fetchAdditionalData}
-                    disabled={loading}
-                    className="w-full bg-slate-500 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-                  >
-                    {loading ? 'Loading...' : 'Refresh All Data'}
                   </button>
                 </div>
               </div>

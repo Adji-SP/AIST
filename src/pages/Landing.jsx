@@ -31,12 +31,12 @@ const DEFAULT_CONTENT = {
         subtitle: 'We provide cutting-edge services to help farmers maximize crop yields. Our precision farming, crop monitoring, and automation solutions aim to revolutionize agriculture.'
     },
     features: [
-        { icon: 'Monitor', title: 'Farming Precision', description: 'Our precision farming employs state-of-the-art technology to optimize every aspect of farm operations.', img: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&q=80&w=600' },
-        { icon: 'Activity', title: 'Crop Surveillance', description: 'Track your crops\' health and growth in real-time with our innovative solutions.', img: 'https://images.unsplash.com/photo-1495107334309-fcf20504a5ab?auto=format&fit=crop&q=80&w=600' },
-        { icon: 'Cpu', title: 'Automated Farming', description: 'Enhance farm efficiency and productivity with our cutting-edge automation solutions.', img: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=600' },
-        { icon: 'BarChart3', title: 'AI Recommendations', description: 'Receive smart, data-driven suggestions tailored to your specific field conditions.', img: 'https://images.unsplash.com/photo-1592982537447-6f2aa6c08fe2?auto=format&fit=crop&q=80&w=600' },
-        { icon: 'Zap', title: 'Real-time Alerts', description: 'Instant notifications when thresholds are crossed to prevent crop loss.', img: 'https://images.unsplash.com/photo-1560493676-04071c5f467b?auto=format&fit=crop&q=80&w=600' },
-        { icon: 'Globe', title: 'Multi-Site Sync', description: 'Manage multiple orchards seamlessly from a single unified command center.', img: 'https://images.unsplash.com/photo-1605000797499-95a51c5269ae?auto=format&fit=crop&q=80&w=600' }
+        { icon: 'Monitor', title: 'Farming Precision', description: 'Our precision farming employs state-of-the-art technology to optimize every aspect of farm operations.', img: '/assets/landing/feature-1.jpg' },
+        { icon: 'Activity', title: 'Crop Surveillance', description: 'Track your crops\' health and growth in real-time with our innovative solutions.', img: '/assets/landing/feature-2.jpg' },
+        { icon: 'Cpu', title: 'Automated Farming', description: 'Enhance farm efficiency and productivity with our cutting-edge automation solutions.', img: '/assets/landing/feature-3.jpg' },
+        { icon: 'BarChart3', title: 'AI Recommendations', description: 'Receive smart, data-driven suggestions tailored to your specific field conditions.', img: '/assets/landing/feature-4.jpg' },
+        { icon: 'Zap', title: 'Real-time Alerts', description: 'Instant notifications when thresholds are crossed to prevent crop loss.', img: '/assets/landing/feature-5.jpg' },
+        { icon: 'Globe', title: 'Multi-Site Sync', description: 'Manage multiple orchards seamlessly from a single unified command center.', img: '/assets/landing/feature-6.jpg' }
     ],
     howItWorks: [
         { num: '01', title: 'Connect Sensors', description: 'Install IoT devices across your fields to stream live soil and weather data directly to the cloud.' },
@@ -44,14 +44,14 @@ const DEFAULT_CONTENT = {
         { num: '03', title: 'Take Action', description: 'Receive actionable insights and automated trigger commands for irrigation and fertilization.' }
     ],
     solutions: [
-        { id: 'farmers', label: 'Farmers', text: 'Empower your daily operations with real-time insights.', bullets: ['Increase crop yield by up to 25%', 'Reduce water consumption', 'Predict disease outbreaks'], img: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80' },
-        { id: 'coops', label: 'Co-Ops', text: 'Manage multiple member farms from a unified oversight board.', bullets: ['Aggregate yield forecasting', 'Resource sharing optimization', 'Member performance tracking'], img: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=800&q=80' },
-        { id: 'agri-biz', label: 'Agri-Business', text: 'Scale your enterprise with enterprise-grade data pipelines.', bullets: ['Supply chain integration', 'Sustainability reporting', 'Automated compliance'], img: 'https://images.unsplash.com/photo-1592982537447-6f2aa6c08fe2?auto=format&fit=crop&w=800&q=80' }
+        { id: 'farmers', label: 'Farmers', text: 'Empower your daily operations with real-time insights.', bullets: ['Increase crop yield by up to 25%', 'Reduce water consumption', 'Predict disease outbreaks'], img: '/assets/landing/solution-1.jpg' },
+        { id: 'coops', label: 'Co-Ops', text: 'Manage multiple member farms from a unified oversight board.', bullets: ['Aggregate yield forecasting', 'Resource sharing optimization', 'Member performance tracking'], img: '/assets/landing/solution-2.jpg' },
+        { id: 'agri-biz', label: 'Agri-Business', text: 'Scale your enterprise with enterprise-grade data pipelines.', bullets: ['Supply chain integration', 'Sustainability reporting', 'Automated compliance'], img: '/assets/landing/solution-3.jpg' }
     ],
     testimonials: [
-        { name: 'Ahmad Razali', role: 'Farm Manager, EcoYield', text: 'Rultiva has completely transformed how we manage our orchards. The real-time data helps us make faster, better decisions every single day.', avatar: 'https://i.pravatar.cc/150?img=11' },
-        { name: 'Dr. Siti Aminah', role: 'Agricultural Researcher', text: 'The AI-powered insights are incredibly accurate. We\'ve seen a 30% improvement in yield prediction since using the platform.', avatar: 'https://i.pravatar.cc/150?img=5' },
-        { name: 'Mohd Faizal', role: 'Director, GreenFarm', text: 'Setting up the sensors was straightforward, and the dashboard is beautiful and intuitive. The best premium platform for modern agriculture.', avatar: 'https://i.pravatar.cc/150?img=8' }
+        { name: 'Ahmad Razali', role: 'Farm Manager, EcoYield', text: 'Greenara has completely transformed how we manage our orchards. The real-time data helps us make faster, better decisions every single day.', avatar: '/assets/landing/avatar-1.jpg' },
+        { name: 'Dr. Siti Aminah', role: 'Agricultural Researcher', text: 'The AI-powered insights are incredibly accurate. We\'ve seen a 30% improvement in yield prediction since using the platform.', avatar: '/assets/landing/avatar-2.jpg' },
+        { name: 'Mohd Faizal', role: 'Director, GreenFarm', text: 'Setting up the sensors was straightforward, and the dashboard is beautiful and intuitive. The best premium platform for modern agriculture.', avatar: '/assets/landing/avatar-3.jpg' }
     ],
     pricing: [
         { plan: 'Starter', price: '$49', period: '/mo', description: 'Perfect for small independent farms starting their tech journey.', features: ['Up to 5 sensor nodes', 'Daily AI insights', 'Basic email support', '7-day data retention'], btnText: 'Start Free Trial', isPro: false },
@@ -59,7 +59,7 @@ const DEFAULT_CONTENT = {
         { plan: 'Enterprise', price: 'Custom', period: '', description: 'Custom-built solutions for massive co-ops and agri-businesses.', features: ['Unlimited sensor nodes', 'Custom AI model training', 'Dedicated account manager', 'API access & integrations', 'White-labeling options'], btnText: 'Contact Sales', isPro: false }
     ],
     faq: [
-        { q: 'What sensors are compatible with Rultiva?', a: 'Rultiva is hardware-agnostic and integrates with most standard commercial IoT sensors via MQTT, HTTP, and LoRaWAN protocols.' },
+        { q: 'What sensors are compatible with Greenara?', a: 'Greenara is hardware-agnostic and integrates with most standard commercial IoT sensors via MQTT, HTTP, and LoRaWAN protocols.' },
         { q: 'How long does setup take?', a: 'Hardware installation depends on your farm size, but connecting your devices to our dashboard takes less than 5 minutes per node.' },
         { q: 'Can I access the dashboard on mobile?', a: 'Yes! Our platform is perfectly responsive, meaning you get the full premium experience on your smartphone or tablet.' },
         { q: 'Is my farm data secure?', a: 'Absolutely. We use banking-grade 256-bit encryption for all data transmission and storage. Your data belongs entirely to you.' }
@@ -74,14 +74,14 @@ const DEFAULT_CONTENT = {
         supervisor: {
             name: 'Ir. Safira Firdaus',
             role: 'Project Supervisor',
-            imageUrl: 'https://avatar.iran.liara.run/public/job/teacher/male',
+            imageUrl: '/assets/landing/team-supervisor.png',
             responsibilities: ['Oversee project direction', 'Provide technical guidance', 'Ensure academic alignment']
         },
         students: [
-            { name: 'M. Riandy Pratama', role: 'Team Leader', studentId: 'NIM: 2021001', imageUrl: 'https://avatar.iran.liara.run/public/girl', responsibilities: ['Frontend Dev', 'UI/UX Design'], email: 'ndyy@example.com', linkedin: '#', instagram: '#' },
-            { name: 'Satrio Adji Purwo', role: 'Backend Dev', studentId: 'NIM: 2021002', imageUrl: 'https://avatar.iran.liara.run/public/boy', responsibilities: ['APIs', 'Database'], email: 'jii@example.com', linkedin: '#', instagram: '#' },
-            { name: 'A. Maulvin Nazir Z.', role: 'IoT Hardare', studentId: 'NIM: 2021003', imageUrl: 'https://avatar.iran.liara.run/public/boy', responsibilities: ['Sensors', 'Serial Comm'], email: 'jonathan@example.com', linkedin: '#', instagram: '#' },
-            { name: 'Yus Putri Arum S.', role: 'Data Analyst', studentId: 'NIM: 2021004', imageUrl: 'https://avatar.iran.liara.run/public/girl', responsibilities: ['Predictive Models', 'Reports'], email: 'yuuuss@example.com', linkedin: '#', instagram: '#' },
+            { name: 'M. Riandy Pratama', role: 'Team Leader', studentId: 'NIM: 2021001', imageUrl: '/assets/landing/team-1.png', responsibilities: ['Frontend Dev', 'UI/UX Design'], email: 'ndyy@example.com', linkedin: '#', instagram: '#' },
+            { name: 'Satrio Adji Purwo', role: 'Backend Dev', studentId: 'NIM: 2021002', imageUrl: '/assets/landing/team-2.png', responsibilities: ['APIs', 'Database'], email: 'jii@example.com', linkedin: '#', instagram: '#' },
+            { name: 'A. Maulvin Nazir Z.', role: 'IoT Hardare', studentId: 'NIM: 2021003', imageUrl: '/assets/landing/team-3.png', responsibilities: ['Sensors', 'Serial Comm'], email: 'jonathan@example.com', linkedin: '#', instagram: '#' },
+            { name: 'Yus Putri Arum S.', role: 'Data Analyst', studentId: 'NIM: 2021004', imageUrl: '/assets/landing/team-4.png', responsibilities: ['Predictive Models', 'Reports'], email: 'yuuuss@example.com', linkedin: '#', instagram: '#' },
         ]
     }
 };
@@ -123,125 +123,112 @@ const Landing = () => {
     const safeHero = hero || DEFAULT_CONTENT.hero;
     const safeFeaturesIntro = featuresIntro || DEFAULT_CONTENT.featuresIntro;
     const safeFinalCta = finalCta || DEFAULT_CONTENT.finalCta;
+    const safeHowItWorks = howItWorks?.length ? howItWorks : DEFAULT_CONTENT.howItWorks;
+
+    // Map through array data to ensure local images are preserved even if Firebase sends external URLs
+    const safeFeatures = (Array.isArray(features) && features.length > 0 ? features : DEFAULT_CONTENT.features).map((feat, i) => ({
+        ...feat,
+        img: DEFAULT_CONTENT.features[i]?.img || '/assets/landing/feature-1.jpg'
+    }));
+
+    const safeSolutions = (Array.isArray(solutions) && solutions.length > 0 ? solutions : DEFAULT_CONTENT.solutions).map((sol, i) => ({
+        ...sol,
+        img: DEFAULT_CONTENT.solutions[i]?.img || '/assets/landing/solution-1.jpg'
+    }));
+
+    const safeTeam = {
+        supervisor: {
+            ...(team?.supervisor || DEFAULT_CONTENT.team.supervisor),
+            imageUrl: DEFAULT_CONTENT.team.supervisor.imageUrl
+        },
+        students: (Array.isArray(team?.students) && team.students.length > 0 ? team.students : DEFAULT_CONTENT.team.students).map((s, i) => ({
+            ...s,
+            imageUrl: DEFAULT_CONTENT.team.students[i]?.imageUrl || '/assets/landing/team-1.png'
+        }))
+    };
 
     return (
         <div className="min-h-screen bg-[#F6F5F0] text-[#1D1C1A] font-sans selection:bg-[#A9E8C8] selection:text-[#1D1C1A] overflow-x-hidden">
 
             {/* --- 1. Top Navigation --- */}
-            <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#F6F5F0]/80 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}>
-                <div className="max-w-[1440px] mx-auto px-6 lg:px-20 2xl:px-24 flex justify-between items-center">
+            <nav className={`fixed w-full top-0 z-50 transition-all duration-300 px-6 lg:px-12 py-6 ${scrolled ? 'bg-[#F6F5F0]/90 backdrop-blur-md shadow-sm !py-4' : 'bg-transparent'}`}>
+                <div className="max-w-[1440px] mx-auto flex justify-between items-center">
                     <Link to="/" className="flex items-center gap-2 group">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#3FAE49] text-white shadow-md group-hover:bg-[#359740] transition-colors">
-                            <Leaf size={18} />
-                        </div>
-                        <span className="font-bold text-xl tracking-tight text-[#1D1C1A]">Rultiva.</span>
+                        <img
+                            src={scrolled ? "/assets/logo/LOGO.png" : "/assets/logo/WHITE.png"}
+                            alt="Logo"
+                            className="w-10 h-10 object-contain transition-all"
+                        />
+                        <span className={`font-bold text-xl tracking-tight ${scrolled ? 'text-[#1D1C1A]' : 'text-white'}`}>Greenara.</span>
                     </Link>
 
-                    {/* Desktop Menu */}
-                    <ul className="hidden lg:flex items-center gap-8 font-medium text-sm text-[#1D1C1A]/70">
-                        <li><a href="#features" className="hover:text-[#3FAE49] transition-colors">Features</a></li>
-                        <li><a href="#how-it-works" className="hover:text-[#3FAE49] transition-colors">How it works</a></li>
-                        <li><a href="#solutions" className="hover:text-[#3FAE49] transition-colors">Solutions</a></li>
-                        <li><a href="#pricing" className="hover:text-[#3FAE49] transition-colors">Pricing</a></li>
-                    </ul>
+                    {/* Desktop Menu - Center Pill style */}
+                    <div className={`hidden lg:flex items-center gap-2 px-2 py-1.5 rounded-full backdrop-blur-md text-sm font-medium ${scrolled ? 'bg-[#1D1C1A]/5 text-[#1D1C1A]' : 'bg-white/10 border border-white/20 text-white'}`}>
+                        <a href="#" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'bg-white shadow-sm' : 'bg-white text-[#1D1C1A]'}`}>Home</a>
+                        <a href="#features" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'hover:bg-white' : 'hover:bg-white/20'}`}>Features</a>
+                        <a href="#how-it-works" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'hover:bg-white' : 'hover:bg-white/20'}`}>How it works</a>
+                        <a href="#solutions" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'hover:bg-white' : 'hover:bg-white/20'}`}>Solutions</a>
+                    </div>
 
                     {/* Desktop Actions */}
-                    <div className="hidden lg:flex items-center gap-5">
-                        <Link to="/login" className="font-semibold text-sm text-[#1D1C1A] py-2 px-4 hover:bg-[#1D1C1A]/5 rounded-full transition-colors">
+                    <div className="hidden lg:flex items-center gap-4">
+                        <Link to="/login" className={`font-medium text-sm transition-colors ${scrolled ? 'text-[#1D1C1A] hover:text-[#3FAE49]' : 'text-white hover:text-[#D4F542]'}`}>
                             Sign In
                         </Link>
-                        <Link to="/register" className="font-bold text-sm px-6 py-3 rounded-full bg-[#3FAE49] text-white shadow-lg shadow-[#3FAE49]/20 hover:bg-[#359740] hover:-translate-y-0.5 transition-all outline-none focus:ring-4 focus:ring-[#A9E8C8]">
-                            Join the Beta
+                        <Link to="/register" className={`font-semibold text-sm px-6 py-2.5 rounded-full transition-all ${scrolled ? 'bg-[#1D1C1A] text-white hover:bg-black' : 'bg-white text-[#1D1C1A] hover:bg-gray-100'}`}>
+                            Contact Us
                         </Link>
                     </div>
 
                     {/* Mobile Toggle */}
-                    <button className="lg:hidden text-[#1D1C1A] p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                    <button className={`lg:hidden p-2 ${scrolled ? 'text-[#1D1C1A]' : 'text-white'}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                         {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                 </div>
             </nav>
 
             {/* --- 2. Hero Section --- */}
-            <section className="relative pt-[160px] pb-16 lg:pt-[200px] lg:pb-24 px-6 lg:px-20 2xl:px-24 max-w-[1440px] mx-auto overflow-hidden">
-                <div className="grid lg:grid-cols-[1fr_1.2fr] gap-12 lg:gap-16 items-center">
-                    {/* Left Column */}
-                    <div className="max-w-xl relative z-10">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#A9E8C8]/30 border border-[#A9E8C8] text-[#3FAE49] text-xs font-bold mb-8 uppercase tracking-wider animate-fade-in-up">
-                            <Star size={12} className="fill-current" />
-                            {safeHero.badge || 'Precision Agriculture Platform'}
-                        </div>
+            <section className="relative w-full h-screen min-h-[700px] flex flex-col justify-end pt-32 pb-8 overflow-hidden">
+                {/* Background Image & Overlay */}
+                <div className="absolute inset-0 z-0 border-b border-[#1D1C1A]/10">
+                    <img src="/assets/landing/hero-bg.jpg" alt="Background pattern" className="w-full h-full object-cover" fetchpriority="high" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
+                </div>
 
-                        <h1 className="text-5xl sm:text-6xl lg:text-[72px] lg:leading-[1.05] font-extrabold text-[#1D1C1A] tracking-[-0.02em] mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                            {safeHero.titleLine1 || 'Bring Fresh Growth'} <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3FAE49] to-emerald-400">
-                                {safeHero.titleHighlight || 'To Agriculture.'}
-                            </span>
-                        </h1>
+                <div className="max-w-[1440px] mx-auto w-full px-6 lg:px-20 relative z-10 flex flex-col justify-end h-full">
 
-                        <p className="text-lg lg:text-xl text-[#1D1C1A]/70 mb-10 leading-relaxed font-normal animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                            {safeHero.subtitle || DEFAULT_CONTENT.hero.subtitle}
-                        </p>
+                    {/* Text and Context */}
+                    <div className="flex flex-col items-center justify-center text-center gap-8 mb-6 w-full h-full pb-16 lg:pb-32">
 
-                        <div className="flex flex-wrap items-center gap-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-                            <Link to="/register" className="inline-flex items-center justify-center gap-2 bg-[#1D1C1A] text-white px-8 py-4 rounded-full font-bold shadow-xl hover:bg-black hover:shadow-2xl hover:-translate-y-1 transition-all active:scale-95 text-base">
-                                {safeHero.ctaPrimary || 'Get Started'} <ArrowRight size={18} />
-                            </Link>
-                            <a href="#how-it-works" className="inline-flex items-center justify-center gap-2 bg-transparent text-[#1D1C1A] px-8 py-4 rounded-full font-bold border-2 border-[#1D1C1A]/10 hover:border-[#1D1C1A]/20 hover:bg-[#1D1C1A]/5 transition-all text-base">
-                                <PlayCircle size={20} className="text-[#1D1C1A]" /> {safeHero.ctaSecondary || 'Watch Demo'}
-                            </a>
-                        </div>
+                        {/* Title and Actions (Centered) */}
+                        <div className="max-w-4xl flex flex-col items-center w-full">
+                            <h1 className="text-5xl sm:text-6xl font-light text-white tracking-tight mb-8 animate-fade-in-up drop-shadow-md" style={{ animationDelay: '100ms' }}>
+                                {safeHero.titleLine1 || 'Smart Farming,'} <br />
+                                <span className="italic">{safeHero.titleHighlight || 'Real-Time Insights'}</span>
+                            </h1>
 
-                        <div className="mt-12 flex items-center gap-4 text-sm font-medium text-[#1D1C1A]/60 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-                            <div className="flex -space-x-3">
-                                {[1, 2, 3, 4].map(i => (
-                                    <div key={i} className={`w-10 h-10 rounded-full border-2 border-[#F6F5F0] overflow-hidden bg-gray-200 z-${50 - i * 10}`}>
-                                        <img src={`https://i.pravatar.cc/100?img=${i + 20}`} alt="avatar" className="w-full h-full object-cover" />
-                                    </div>
-                                ))}
+                            <div className="flex flex-wrap items-center justify-center gap-4 animate-fade-in-up w-full" style={{ animationDelay: '300ms' }}>
+                                <Link to="/register" className="inline-flex items-center justify-center px-8 py-3 rounded-full font-medium bg-[#D4F542] text-[#1D1C1A] hover:bg-[#c2e23b] shadow-lg transition-colors">
+                                    {safeHero.ctaPrimary || 'Get Started'}
+                                </Link>
+                                <a href="#features" className="inline-flex items-center justify-center px-8 py-3 rounded-full font-light border border-white/60 text-white hover:bg-white/10 transition-colors backdrop-blur-sm">
+                                    {safeHero.ctaSecondary || 'Learn More'}
+                                </a>
                             </div>
-                            <p>Trusted by <span className="text-[#1D1C1A] font-bold">5,000+</span> Modern Farms.</p>
                         </div>
                     </div>
 
-                    {/* Right Column / Hero Visual */}
-                    <div className="relative animate-fade-in h-[500px] lg:h-[650px] w-full rounded-[32px] overflow-hidden shadow-2xl isolate" style={{ animationDelay: '500ms' }}>
-                        <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2070&auto=format&fit=crop" alt="Precision Farm" className="absolute inset-0 w-full h-full object-cover -z-10" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent -z-10" />
-
-                        {/* Floating Micro UI Cards */}
-                        <div className="absolute top-10 right-8 bg-[#F6F5F0] p-4 rounded-2xl shadow-xl flex items-center gap-4 animate-bounce-slow border border-white/40 backdrop-blur-sm">
-                            <div className="w-12 h-12 rounded-full bg-[#E5F5EC] flex items-center justify-center text-[#3FAE49]">
-                                <Droplets size={24} />
-                            </div>
-                            <div>
-                                <div className="text-xs font-semibold text-[#1D1C1A]/60 uppercase tracking-wider">Soil Moisture</div>
-                                <div className="text-lg font-extrabold text-[#1D1C1A]">68% <span className="text-xs font-bold text-[#3FAE49] ml-1">Optimal</span></div>
-                            </div>
-                        </div>
-
-                        <div className="absolute bottom-10 left-8 bg-[#F6F5F0]/90 p-5 rounded-[24px] shadow-2xl backdrop-blur-md border border-white/50 w-64 animate-bounce-slow" style={{ animationDelay: '2s' }}>
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-xs font-bold text-[#1D1C1A]/60">NPK TREND</span>
-                                <BarChart3 className="text-[#1A73E8] w-4 h-4" />
-                            </div>
-                            <div className="h-16 flex items-end justify-between gap-1">
-                                {[30, 45, 25, 60, 80, 50, 90].map((h, i) => (
-                                    <div key={i} className="w-full bg-[#1A73E8]/20 rounded-t-sm" style={{ height: `${h}%` }}>
-                                        {i === 6 && <div className="w-full h-full bg-[#1A73E8] rounded-t-sm" />}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="absolute top-1/2 left-8 bg-[#3FAE49] text-white p-3 rounded-full shadow-lg animate-pulse">
-                            <CheckCircle size={24} />
-                        </div>
+                    {/* Giant Bottom Text */}
+                    <div className="w-full flex justify-center items-end overflow-hidden animate-fade-in-up mt-8 lg:mt-0 px-4" style={{ animationDelay: '500ms' }}>
+                        <h3 className="leading-[0.75] font-bold text-white/90 mix-blend-overlay pb-2 select-none whitespace-nowrap" style={{ fontSize: 'clamp(3rem, 15vw, 150px)' }}>
+                            Greenara
+                        </h3>
                     </div>
                 </div>
             </section>
 
             {/* --- 3. Quick Metrics Strip --- */}
+            {/* 
             <section className="bg-white border-y border-[#1D1C1A]/5 py-10 my-10 relative z-20">
                 <div className="max-w-[1440px] mx-auto px-6 lg:px-20 grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-[#1D1C1A]/5">
                     {Array.isArray(metrics) && metrics.map((m, i) => (
@@ -252,6 +239,7 @@ const Landing = () => {
                     ))}
                 </div>
             </section>
+            */}
 
             {/* --- 4. Features Section --- */}
             <section id="features" className="py-24 max-w-[1440px] mx-auto px-6 lg:px-20">
@@ -269,12 +257,12 @@ const Landing = () => {
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.isArray(features) && features.map((feat, i) => {
+                    {safeFeatures.map((feat, i) => {
                         const Icon = resolveIcon(feat.icon);
                         return (
                             <div key={i} className="group bg-white rounded-[24px] p-2 border border-[#1D1C1A]/5 shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.06)] transition-all duration-300">
                                 <div className="h-48 rounded-[16px] overflow-hidden mb-6 relative bg-gray-100">
-                                    <img src={feat.img} alt={feat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+                                    <img src={feat.img} alt={feat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
                                     <div className="absolute top-4 left-4 w-12 h-12 rounded-xl bg-white/90 backdrop-blur-md flex items-center justify-center text-[#3FAE49] shadow-sm">
                                         <Icon size={24} />
                                     </div>
@@ -301,7 +289,7 @@ const Landing = () => {
 
                     <div className="grid lg:grid-cols-[1fr_1.5fr] gap-16 items-center">
                         <div className="space-y-8">
-                            {Array.isArray(howItWorks) && howItWorks.map((step, i) => (
+                            {Array.isArray(safeHowItWorks) && safeHowItWorks.map((step, i) => (
                                 <div key={i} className="flex gap-6 group">
                                     <div className="flex-shrink-0 w-16 h-16 rounded-full bg-white shadow-md border border-gray-100 flex items-center justify-center text-xl font-black text-[#3FAE49] group-hover:bg-[#3FAE49] group-hover:text-white transition-colors duration-300">
                                         {step.num}
@@ -314,7 +302,7 @@ const Landing = () => {
                             ))}
                         </div>
                         <div className="bg-white p-4 lg:p-6 rounded-[32px] shadow-2xl border border-gray-100 transform lg:rotate-2 hover:rotate-0 transition-transform duration-500">
-                            <img src="https://images.unsplash.com/photo-1590682680695-43b964a3ae17?q=80&w=2000&auto=format&fit=crop" alt="Dashboard Illustration" className="w-full h-auto rounded-[20px]" />
+                            <img src="/assets/landing/how-it-works.jpg" alt="Dashboard Illustration" className="w-full h-auto rounded-[20px] object-cover" loading="lazy" />
                         </div>
                     </div>
                 </div>
@@ -328,7 +316,7 @@ const Landing = () => {
                 </div>
 
                 <div className="flex gap-4 overflow-x-auto pb-6 justify-start lg:justify-center no-scrollbar">
-                    {Array.isArray(solutions) && solutions.map((s, i) => (
+                    {safeSolutions.map((s, i) => (
                         <button
                             key={s.id || i}
                             onClick={() => setActiveSolutionTab(i)}
@@ -338,7 +326,7 @@ const Landing = () => {
                     ))}
                 </div>
 
-                {Array.isArray(solutions) && solutions.map((s, i) => (
+                {safeSolutions.map((s, i) => (
                     <div key={s.id || i} className={`${activeSolutionTab === i ? 'block' : 'hidden'} animate-fade-in`}>
                         <div className="bg-white rounded-[32px] p-8 lg:p-12 border border-gray-100 shadow-[0_8px_32px_rgba(0,0,0,0.03)] grid lg:grid-cols-2 gap-12 items-center">
                             <div>
@@ -357,7 +345,7 @@ const Landing = () => {
                                 <button className="mt-10 font-bold text-[#3FAE49] flex items-center gap-2 hover:gap-3 transition-all">Explore {s.label} Solutions <ArrowRight size={18} /></button>
                             </div>
                             <div className="h-64 lg:h-[400px] rounded-[24px] overflow-hidden">
-                                <img src={s.img} alt={s.label} className="w-full h-full object-cover" />
+                                <img src={s.img} alt={s.label} className="w-full h-full object-cover" loading="lazy" />
                             </div>
                         </div>
                     </div>
@@ -371,7 +359,7 @@ const Landing = () => {
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-16">Monitor everything.<br />From anywhere.</h2>
 
                     <div className="relative rounded-[24px] lg:rounded-[40px] bg-[#3FAE49]/10 p-4 lg:p-8 backdrop-blur-xl border border-[#3FAE49]/20 mx-auto max-w-5xl shadow-2xl">
-                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop" alt="Dashboard" className="rounded-[16px] lg:rounded-[24px] w-full shadow-2xl border border-white/10" />
+                        <img src="/assets/landing/command-center.jpg" alt="Dashboard" className="rounded-[16px] lg:rounded-[24px] w-full shadow-2xl border border-white/10" loading="lazy" />
 
                         {/* Callouts */}
                         <div className="hidden md:flex absolute -top-8 -right-8 bg-white p-5 rounded-2xl shadow-2xl items-center gap-4 animate-bounce-slow text-[#1D1C1A]">
@@ -393,10 +381,10 @@ const Landing = () => {
             </section>
 
             {/* --- 8. Testimonials Section --- */}
-            <section className="py-24 max-w-[1440px] mx-auto px-6 lg:px-20">
+            {/* <section className="py-24 max-w-[1440px] mx-auto px-6 lg:px-20">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl lg:text-5xl font-extrabold text-[#1D1C1A] tracking-tight mb-4">Trusted Worldwide</h2>
-                    <p className="text-lg text-[#1D1C1A]/70">Hear from the farmers rewriting their legacy with Rultiva.</p>
+                    <p className="text-lg text-[#1D1C1A]/70">Hear from the farmers rewriting their legacy with Greenara.</p>
                 </div>
                 <div className="grid md:grid-cols-3 gap-8">
                     {Array.isArray(testimonials) && testimonials.map((t, i) => (
@@ -415,26 +403,26 @@ const Landing = () => {
                         </div>
                     ))}
                 </div>
-            </section>
+            </section> */}
 
             {/* --- 4.5 Team (Merged dynamically inside redesign) --- */}
             <section id="team" className="py-24 bg-white border-y border-gray-100">
                 <div className="max-w-[1440px] mx-auto px-6 lg:px-20 text-center">
                     <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#E5F5EC] text-[#3FAE49] text-xs font-bold mb-6 uppercase tracking-wider">Credits</div>
-                    <h2 className="text-4xl lg:text-5xl font-extrabold text-[#1D1C1A] tracking-tight mb-16">The Minds Behind Rultiva</h2>
+                    <h2 className="text-4xl lg:text-5xl font-extrabold text-[#1D1C1A] tracking-tight mb-16">The Minds Behind Greenara</h2>
 
                     {/* Supervisor */}
-                    {team && team.supervisor && (
+                    {safeTeam.supervisor && (
                         <div className="max-w-xl mx-auto mb-16 relative">
                             <div className="bg-[#F6F5F0] rounded-[32px] p-8 border border-white shadow-xl hover:-translate-y-1 transition-transform group">
                                 <div className="absolute top-0 right-8 transform -translate-y-1/2 bg-[#3FAE49] text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-md">Supervisor</div>
                                 <div className="w-28 h-28 rounded-full bg-white mx-auto mb-6 p-1 border-2 border-[#A9E8C8]">
-                                    <img src={team.supervisor.imageUrl} alt={team.supervisor.name} className="w-full h-full rounded-full object-cover" />
+                                    <img src={safeTeam.supervisor.imageUrl} alt={safeTeam.supervisor.name} className="w-full h-full rounded-full object-cover" loading="lazy" />
                                 </div>
-                                <h3 className="text-2xl font-extrabold text-[#1D1C1A] mb-2">{team.supervisor.name}</h3>
-                                <p className="text-[#3FAE49] font-bold mb-6">{team.supervisor.role}</p>
+                                <h3 className="text-2xl font-extrabold text-[#1D1C1A] mb-2">{safeTeam.supervisor.name}</h3>
+                                <p className="text-[#3FAE49] font-bold mb-6">{safeTeam.supervisor.role}</p>
                                 <ul className="text-sm text-[#1D1C1A]/70 text-left space-y-3 px-8">
-                                    {Array.isArray(team.supervisor.responsibilities) && team.supervisor.responsibilities.map((r, ri) => (
+                                    {Array.isArray(safeTeam.supervisor.responsibilities) && safeTeam.supervisor.responsibilities.map((r, ri) => (
                                         <li key={ri} className="flex gap-3 items-start"><Check className="text-[#3FAE49] w-5 h-5 flex-shrink-0" /> <span>{r}</span></li>
                                     ))}
                                 </ul>
@@ -444,10 +432,10 @@ const Landing = () => {
 
                     {/* Students */}
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {Array.isArray(team?.students) && team.students.map((s, si) => (
+                        {safeTeam.students.map((s, si) => (
                             <div key={si} className="bg-white rounded-[24px] p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all text-center">
                                 <div className="w-20 h-20 rounded-full mx-auto mb-4 bg-gray-50 overflow-hidden">
-                                    <img src={s.imageUrl} alt={s.name} className="w-full h-full object-cover" />
+                                    <img src={s.imageUrl} alt={s.name} className="w-full h-full object-cover" loading="lazy" />
                                 </div>
                                 <h4 className="font-bold text-lg text-[#1D1C1A] leading-tight mb-1">{s.name}</h4>
                                 <p className="text-xs font-bold text-[#3FAE49] bg-[#E5F5EC] inline-block px-2 py-1 rounded-md mb-2">{s.role}</p>
@@ -465,10 +453,15 @@ const Landing = () => {
 
             {/* --- 9. Pricing Section --- */}
             <section id="pricing" className="py-24 max-w-[1440px] mx-auto px-6 lg:px-20">
-                <div className="text-center mb-16">
+                <div className="text-center">
                     <h2 className="text-4xl lg:text-5xl font-extrabold text-[#1D1C1A] tracking-tight mb-4">Simple, Transparent Pricing</h2>
-                    <p className="text-lg text-[#1D1C1A]/70">Choose the plan that best fits your farming magnitude.</p>
+                    <p className="text-lg text-[#1D1C1A]/70 mb-12">Choose the plan that best fits your farming magnitude.</p>
+
+                    <div className="inline-block bg-[#E5F5EC] text-[#3FAE49] font-black tracking-widest uppercase px-8 py-4 rounded-full text-sm border border-[#3FAE49]/20 shadow-sm mb-8">
+                        Coming Soon
+                    </div>
                 </div>
+                {/* 
                 <div className="grid lg:grid-cols-3 gap-8 items-center">
                     {Array.isArray(pricing) && pricing.map((p, i) => (
                         <div key={i} className={`bg-white rounded-[32px] p-8 lg:p-10 border shadow-sm transition-all hover:shadow-2xl ${p.isPro ? 'border-[#3FAE49] shadow-xl lg:scale-105 relative' : 'border-gray-100'}`}>
@@ -495,6 +488,7 @@ const Landing = () => {
                         </div>
                     ))}
                 </div>
+                */}
             </section>
 
             {/* --- 10. FAQ Accordion --- */}
@@ -545,7 +539,7 @@ const Landing = () => {
                                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#3FAE49] text-white">
                                     <Leaf size={18} />
                                 </div>
-                                <span className="font-bold text-xl text-[#1D1C1A]">Rultiva.</span>
+                                <span className="font-bold text-xl text-[#1D1C1A]">Greenara.</span>
                             </Link>
                             <p className="text-[#1D1C1A]/60 max-w-xs mb-8">{content?.footer?.description || "Empowering the future of agriculture with smart sensing and AI metrics."}</p>
                             <div className="flex gap-4">
@@ -585,7 +579,7 @@ const Landing = () => {
                     </div>
 
                     <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                        <p className="text-sm font-semibold text-[#1D1C1A]/40">© {new Date().getFullYear()} Rultiva Agriculture. All rights reserved.</p>
+                        <p className="text-sm font-semibold text-[#1D1C1A]/40">© {new Date().getFullYear()} Greenara Agriculture. All rights reserved.</p>
                         <p className="text-sm font-semibold text-[#1D1C1A]/40">Made with ❤️ for Better Farming</p>
                     </div>
                 </div>

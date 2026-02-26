@@ -5,8 +5,8 @@ import { getFirebaseClient } from '../firebaseClient';
 
 // Cache for Firestore data to prevent unnecessary loading states
 const dataCache = new Map();
-const getCacheKey = (collectionName, options) => {
-    return `${collectionName}_${JSON.stringify(options)}`;
+const getCacheKey = (collectionName, stringifiedOptions) => {
+    return `${collectionName}_${stringifiedOptions}`;
 };
 
 /**
@@ -15,8 +15,11 @@ const getCacheKey = (collectionName, options) => {
  * Now with caching to prevent re-loading on component remount
  */
 export const useFirestore = (collectionName, options = {}) => {
+    // Stringify options to stabilize the dependency array (prevent infinite loop on inline objects)
+    const optionsStr = JSON.stringify(options);
+
     // Memoize the cache key to prevent unnecessary recalculations
-    const cacheKey = useMemo(() => getCacheKey(collectionName, options), [collectionName, options]);
+    const cacheKey = useMemo(() => getCacheKey(collectionName, optionsStr), [collectionName, optionsStr]);
     const cachedData = dataCache.get(cacheKey);
 
     // Initialize with cached data if available
@@ -42,9 +45,10 @@ export const useFirestore = (collectionName, options = {}) => {
         const firebaseClient = getFirebaseClient();
 
         // Subscribe to real-time updates
+        const parsedOptions = JSON.parse(optionsStr);
         const unsubscribe = firebaseClient.subscribe(
             collectionName,
-            options,
+            parsedOptions,
             (documents, err) => {
                 if (err) {
                     setError(err);
@@ -65,7 +69,7 @@ export const useFirestore = (collectionName, options = {}) => {
 
         // Cleanup subscription on unmount
         return unsubscribe;
-    }, [collectionName, cacheKey, options]);
+    }, [collectionName, cacheKey, optionsStr]);
 
     return { data, loading, error };
 };
@@ -128,14 +132,20 @@ export const useFirestoreMutations = (collectionName) => {
 /**
  * Hook for sensor data — Uses generic useFirestore with specific options
  */
-export const useSensorData = (siteId = null, limit = 50) => {
+export const useSensorData = (siteId = null, limit = 50, role = 'user', userDevices = []) => {
+    // Sanitize userDevices: remove nulls/undefined and limit to 10 (Firestore 'in' max limit)
+    let safeDeviceIds = Array.isArray(userDevices) ? userDevices.filter(id => id) : [];
+    if (safeDeviceIds.length === 0) safeDeviceIds = ['UNASSIGNED_FALLBACK'];
+    if (safeDeviceIds.length > 10) safeDeviceIds = safeDeviceIds.slice(0, 10);
+
     const options = {
-        orderBy: { field: 'timestamp', direction: 'desc' },
         limit
     };
 
-    if (siteId) {
+    if (role === 'admin' && siteId) {
         options.where = { field: 'site_id', operator: '==', value: siteId };
+    } else {
+        options.where = { field: 'device_id', operator: 'in', value: safeDeviceIds };
     }
 
     return useFirestore('sensors_data', options);
@@ -146,7 +156,6 @@ export const useSensorData = (siteId = null, limit = 50) => {
  */
 export const useFinancialData = (siteId = null, limit = 30) => {
     const options = {
-        orderBy: { field: 'timestamp', direction: 'desc' },
         limit
     };
 
@@ -160,15 +169,20 @@ export const useFinancialData = (siteId = null, limit = 30) => {
 /**
  * Hook for tasks
  */
-export const useTasks = (siteId = null, isCompleted = null) => {
-    const options = {
-        orderBy: { field: 'date', direction: 'asc' }
-    };
+export const useTasks = (siteId = null, role = 'user', uid = null, isCompleted = null) => {
+    const options = {};
 
     const whereConditions = [];
-    if (siteId) {
+
+    // Admins see all tasks for a site, Users see only their own tasks
+    if (role !== 'admin' && uid) {
+        whereConditions.push({ field: 'assigned_to_uid', operator: '==', value: uid });
+    }
+
+    if (siteId && role === 'admin') {
         whereConditions.push({ field: 'site_id', operator: '==', value: siteId });
     }
+
     if (isCompleted !== null) {
         whereConditions.push({ field: 'is_completed', operator: '==', value: isCompleted });
     }
@@ -192,7 +206,7 @@ export const clearFirestoreCache = () => {
  * Utility to clear specific collection from cache
  */
 export const clearCollectionCache = (collectionName, options = {}) => {
-    const cacheKey = getCacheKey(collectionName, options);
+    const cacheKey = getCacheKey(collectionName, JSON.stringify(options));
     dataCache.delete(cacheKey);
     console.log(`🗑️ Cache cleared for: ${collectionName}`);
 };

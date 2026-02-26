@@ -7,6 +7,7 @@ import {
 import Header from '../layout/header';
 import Sidebar from '../layout/sidebar';
 import { useTasks, useFirestoreMutations } from '../../../App/modules/lib/client/hooks/useFirestore';
+import { useAuth } from '../../auth/AuthContext';
 
 // =================================================================================
 // Data Deskripsi Tugas
@@ -282,8 +283,10 @@ const TaskSchedulePage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
 
+    const { user, role } = useAuth();
+
     // Fetch tasks from Firestore (real-time)
-    const { data: firestoreTasks, loading } = useTasks();
+    const { data: firestoreTasks, loading } = useTasks('nipis_orchard', role, user?.uid);
     const { addDocument, update, remove } = useFirestoreMutations('tasks');
 
     // Mapped tasks ensuring correct Date objects
@@ -311,10 +314,12 @@ const TaskSchedulePage = () => {
             await addDocument({
                 title: newEvent.title,
                 description: newEvent.description,
-                date: newEvent.date,
+                date: newEvent.date.getTime(),
                 type: newEvent.type,
                 category: newEvent.category,
                 isCompleted: newEvent.isCompleted,
+                assigned_to_uid: user?.uid, // Scope to specific user
+                site_id: 'nipis_orchard',
             });
         } catch (error) {
             console.error("Failed to add task:", error);

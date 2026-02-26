@@ -11,8 +11,8 @@ import { Leaf, Thermometer, Droplet, Wind, Sun, Activity, SlidersHorizontal, Upl
 import Header from '../layout/header';
 import Sidebar from '../layout/sidebar';
 import keylimeBackground from '../images/image.png';
-import { useApi } from '@lib/client/hooks/useApi';
 import { useSensorData as useFirestoreSensorData, useFinancialData as useFirestoreFinancialData, useFirestoreMutations } from '@lib/client/hooks/useFirestore';
+import { useAuth } from '../../auth/AuthContext';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, RadialLinearScale, Title, Tooltip, Legend, Filler);
 
@@ -155,11 +155,11 @@ const DataPage = () => {
 
     // --- 1. Real-time Backend Data (Firestore) ---
     // Real-time sensor data with Firestore real-time updates
-    const { getSensorData, loading: apiLoading } = useApi();
     const siteId = 'site_a_3_acres';
+    const { role, userDevices } = useAuth();
 
     // Use Firestore hooks for real-time data
-    const firestoreSensorData = useFirestoreSensorData(siteId, 30);
+    const firestoreSensorData = useFirestoreSensorData(siteId, 30, role, userDevices);
     const firestoreFinancialData = useFirestoreFinancialData(siteId, 10);
 
     // Firestore data state
@@ -188,20 +188,10 @@ const DataPage = () => {
     // Load fallback data if Firestore fails
     useEffect(() => {
         if (firestoreSensorData.error && !fallbackSensorData && !loading) {
-            console.log('🔄 Firestore failed, falling back to API...');
-            setLoading(true);
-            getSensorData({ limit: 30 })
-                .then(data => {
-                    setFallbackSensorData(data || generateDummyData());
-                    console.log('✅ Fallback data loaded');
-                })
-                .catch(() => {
-                    console.log('⚠️ API fallback failed, using dummy data');
-                    setFallbackSensorData(generateDummyData());
-                })
-                .finally(() => setLoading(false));
+            console.log('🔄 Firestore WebChannel failed or blocked (e.g. Adblocker/Brave Shields). Using dummy data...');
+            setFallbackSensorData(typeof generateDummyData === 'function' ? generateDummyData() : []);
         }
-    }, [firestoreSensorData.error, fallbackSensorData, loading, getSensorData]);
+    }, [firestoreSensorData.error, fallbackSensorData, loading]);
 
     // CSV upload handler
     const handleCsvUpload = async (csvRows) => {
@@ -294,7 +284,7 @@ const DataPage = () => {
         // Priority: Firestore data > API fallback > dummy data
         if (firestoreSensorData.data && firestoreSensorData.data.length > 0) {
             console.log('🔥 Using Firestore sensor data:', firestoreSensorData.data.length, 'records');
-            return firestoreSensorData.data;
+            return [...firestoreSensorData.data].sort((a, b) => new Date(b.timestamp || b.created_at) - new Date(a.timestamp || a.created_at));
         }
 
         if (fallbackSensorData) {
@@ -365,7 +355,8 @@ const DataPage = () => {
     // Financial metrics (use Firestore data if available)
     const financialMetrics = React.useMemo(() => {
         if (firestoreFinancialData.data && firestoreFinancialData.data.length > 0) {
-            const latest = firestoreFinancialData.data[0];
+            const sorted = [...firestoreFinancialData.data].sort((a, b) => new Date(b.timestamp || b.created_at) - new Date(a.timestamp || a.created_at));
+            const latest = sorted[0];
             console.log('💰 Using Firestore financial data:', latest);
             return {
                 convCost: latest.conventional_cost || 5330,
@@ -542,13 +533,13 @@ const DataPage = () => {
                 <main className="flex-1 p-4 sm:p-6 overflow-auto">
                     {/* Firestore Connection Status */}
                     <div className={`mb-4 p-3 border rounded-lg flex items-center gap-2 ${!firestoreSensorData.loading && !firestoreSensorData.error ? 'bg-green-50 border-green-200' :
-                            firestoreSensorData.loading ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
+                        firestoreSensorData.loading ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
                         }`}>
                         <div className={`w-2 h-2 rounded-full ${!firestoreSensorData.loading && !firestoreSensorData.error ? 'bg-green-500 animate-pulse' :
-                                firestoreSensorData.loading ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
+                            firestoreSensorData.loading ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
                             }`}></div>
                         <span className={`font-medium ${!firestoreSensorData.loading && !firestoreSensorData.error ? 'text-green-700' :
-                                firestoreSensorData.loading ? 'text-yellow-700' : 'text-red-700'
+                            firestoreSensorData.loading ? 'text-yellow-700' : 'text-red-700'
                             }`}>
                             {!firestoreSensorData.loading && !firestoreSensorData.error ? '🔥 Firestore Connected - Real-time updates active' :
                                 firestoreSensorData.loading ? '⏳ Connecting to Firestore...' :
@@ -570,7 +561,7 @@ const DataPage = () => {
                     </div>                    {/* this metrix display is from the dataset collection variable,... show em all*/}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"> {appConfig.metrics.map(metric => <MetricDisplayCard key={metric.key} icon={metric.icon} title={metric.label} value={processedData.latestReading?.[metric.key] || 'N/A'} unit={metric.unit} />)} </div>
                     {/* this input of file uploader is insert into dataset collection */}
-                    <div className="mb-6"><FileUploader onFileUpload={handleCsvUpload} isLoading={uploading || apiLoading} /></div>
+                    <div className="mb-6"><FileUploader onFileUpload={handleCsvUpload} isLoading={uploading} /></div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200"><div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4"><h3 className="text-lg font-bold text-slate-800 mb-2 sm:mb-0">Metric Statistics Over Time</h3><select value={selectedMetric} onChange={(e) => setSelectedMetric(e.target.value)} className="text-sm border-slate-300 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-green-300 focus:border-green-300">{appConfig.metrics.map(metric => <option key={metric.key} value={metric.key}>{metric.label}</option>)}</select></div><div className="h-80"><Line data={processedData.mainLineChartData} options={chartOptions} /></div></div>
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><h3 className="text-lg font-bold text-slate-800 mb-4">Overall Performance</h3><div className="h-80"><Radar data={processedData.radarData} options={{ ...chartOptions, scales: { r: { pointLabels: { font: { size: 10 } }, grid: { color: appConfig.palette.border } } } }} /></div></div>

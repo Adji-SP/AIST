@@ -11,12 +11,14 @@ const getGreeting = () => {
   return "Good Evening";
 };
 
-const Header = ({ onMenuClick, notifications = 15 }) => {
+const Header = ({ onMenuClick, alerts = [] }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, role, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const notificationsRef = useRef(null);
 
   const greeting = getGreeting();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
@@ -29,6 +31,9 @@ const Header = ({ onMenuClick, notifications = 15 }) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setNotificationsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -40,7 +45,7 @@ const Header = ({ onMenuClick, notifications = 15 }) => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-slate-200 px-4 sm:px-6 py-3 relative z-50">
+    <header className="bg-white shadow-sm border-b border-slate-200 px-4 sm:px-6 py-3 sticky top-0 z-50">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
@@ -62,14 +67,59 @@ const Header = ({ onMenuClick, notifications = 15 }) => {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <button className="relative p-2 rounded-full hover:bg-slate-100 transition-colors" aria-label="Notifications">
-              <Bell className="w-6 h-6 text-slate-500" />
-              {notifications > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                  {notifications > 99 ? '99+' : notifications}
-                </span>
+            {/* Notifications Dropdown Container */}
+            <div className="relative" ref={notificationsRef}>
+              <button
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className="relative p-2 rounded-full hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
+              >
+                <Bell className="w-6 h-6 text-slate-500" />
+                {alerts.length > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {alerts.length > 99 ? '99+' : alerts.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Notifications Menu */}
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden origin-top-right transition-all animate-fade-in-up">
+                  <div className="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                    <p className="text-sm font-bold text-slate-800">Notifications</p>
+                    <span className="text-xs font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">{alerts.length}</span>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {alerts.length > 0 ? (
+                      alerts.map((alert, idx) => (
+                        <div key={alert.id || idx} className="p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors flex flex-col gap-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{alert.title || alert.type || 'Alert'}</p>
+                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${alert.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                                alert.severity === 'warning' ? 'bg-orange-100 text-orange-700' :
+                                  'bg-blue-100 text-blue-700'
+                              }`}>
+                              {alert.severity || 'Info'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 line-clamp-2">{alert.description || alert.message || 'Check dashboard for details.'}</p>
+                          {alert.timestamp && (
+                            <p className="text-[10px] text-slate-400 mt-1">
+                              {new Date(typeof alert.timestamp?.toDate === 'function' ? alert.timestamp.toDate() : alert.timestamp).toLocaleTimeString()}
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-slate-500">
+                        <p className="text-sm font-medium">No new notifications</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
 
             {/* Profile Dropdown Container */}
             <div className="relative" ref={dropdownRef}>

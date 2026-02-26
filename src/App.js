@@ -18,6 +18,11 @@ import Maintenance from './components/dashboard/Maintenance';
 import TeamProfile from './components/dashboard/TeamProfile';
 import LandingEditor from './components/dashboard/LandingEditor';
 
+// Admin TailAdmin-themed Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import DeviceRegistry from './pages/admin/DeviceRegistry';
+
 // ── Error Boundary ────────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -93,6 +98,12 @@ function App() {
               <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
               <Route path="/team-profile" element={<ProtectedRoute><TeamProfile /></ProtectedRoute>} />
               <Route path="/landing-editor" element={<AdminRoute><LandingEditor /></AdminRoute>} />
+
+              {/* New TailAdmin Routes */}
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+              <Route path="/admin/devices" element={<AdminRoute><DeviceRegistry /></AdminRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />

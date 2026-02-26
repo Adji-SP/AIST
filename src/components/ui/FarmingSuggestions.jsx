@@ -1,20 +1,7 @@
 import { useMemo } from 'react';
-import {
-    Droplet,
-    Leaf,
-    Activity,
-    AlertTriangle,
-    CheckCircle,
-    Clock,
-    Lightbulb,
-    Beaker,
-    // Removed unused: Scissors
-    Sun,
-    GlassWater,
-    ShieldCheck
-} from 'lucide-react';
+import * as Icons from 'lucide-react';
 
-const FarmingSuggestions = ({ sensorData, loading }) => {
+const FarmingSuggestions = ({ sensorData, dbSuggestions = [], loading }) => {
     // Generate dynamic suggestions based on sensor data
     const suggestions = useMemo(() => {
         if (!sensorData) return [];
@@ -27,7 +14,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             recommendations.push({
                 id: 'watering',
                 type: 'critical',
-                icon: Droplet,
+                icon: Icons.Droplet,
                 title: 'Immediate Irrigation Needed',
                 description: `Low soil moisture (${soil_moisture}%)`,
                 action: `Water with 15-20 liters per citrus tree. Focus on the root zone area with a radius of 1.5m from the trunk.`,
@@ -42,7 +29,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             recommendations.push({
                 id: 'drainage',
                 type: 'warning',
-                icon: AlertTriangle,
+                icon: Icons.AlertTriangle,
                 title: 'Drainage Required',
                 description: `Soil moisture too high (${soil_moisture}%)`,
                 action: 'Create drainage channels 30cm deep around the tree. Avoid watering for 2-3 days.',
@@ -60,7 +47,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             recommendations.push({
                 id: 'cooling',
                 type: 'warning',
-                icon: Sun,
+                icon: Icons.Sun,
                 title: 'Heat Protection',
                 description: `High temperature (${temperature}°C) may stress plants`,
                 action: 'Install 40% shade net or 5-8cm thick organic mulch. Increase frequency of light watering.',
@@ -78,7 +65,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             recommendations.push({
                 id: 'ph_adjustment',
                 type: 'action',
-                icon: Beaker,
+                icon: Icons.Beaker,
                 title: 'Soil pH Correction',
                 description: `Soil pH too acidic (${ph_level})`,
                 action: 'Apply 200-300g dolomite lime per tree. Mix with 2-3kg mature compost per tree.',
@@ -93,7 +80,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             recommendations.push({
                 id: 'ph_lower',
                 type: 'action',
-                icon: Beaker,
+                icon: Icons.Beaker,
                 title: 'Lower Soil pH',
                 description: `Soil pH too alkaline (${ph_level})`,
                 action: 'Apply 50-80g elemental sulfur per tree or 3-4kg acidic organic compost per tree.',
@@ -111,7 +98,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             recommendations.push({
                 id: 'nitrogen',
                 type: 'action',
-                icon: Leaf,
+                icon: Icons.Leaf,
                 title: 'Nitrogen Fertilization',
                 description: `Low nitrogen level (${nitrogen} ppm)`,
                 action: 'Apply liquid organic NPK fertilizer at 100ml per 10 liters of water. Water the root zone twice a week.',
@@ -129,7 +116,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             recommendations.push({
                 id: 'microorganisms',
                 type: 'enhancement',
-                icon: Activity,
+                icon: Icons.Activity,
                 title: 'Microorganism Injection',
                 description: `Low organic matter (${organic_matter}%)`,
                 action: 'Inject EM4 250ml in 20 liters of water. Apply 2 liters per tree every 2 weeks.',
@@ -148,7 +135,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             recommendations.push({
                 id: 'pruning',
                 type: 'maintenance',
-                icon: GlassWater,
+                icon: Icons.GlassWater,
                 title: 'Watering Suggestion',
                 description: 'Optimal watering area',
                 action: 'site A radius of 3 ares. should be watered 2000L Based on current soil moisture and temperature',
@@ -162,33 +149,59 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
         }
 
         // General soil health recommendation
-        recommendations.push({
-            id: 'soil_health',
-            type: 'enhancement',
-            icon: Lightbulb,
-            title: 'Soil Health Improvement',
-            description: 'Routine recommendation for healthy soil',
-            action: 'Apply 5-8kg mature compost per tree every 3 months. Add 500g biochar per tree for water retention.',
-            priority: 'low',
-            timeframe: 'Monthly routine',
-            color: 'text-teal-700',
-            bgColor: 'bg-gradient-to-r from-teal-50 to-cyan-50',
-            borderColor: 'border-teal-300',
-            iconBg: 'bg-teal-100'
+        if (!sensorData && recommendations.length === 0) {
+            // If no sensor data, at least show a routine
+            recommendations.push({
+                id: 'soil_health',
+                type: 'enhancement',
+                icon: Icons.Lightbulb,
+                title: 'Soil Health Improvement',
+                description: 'Routine recommendation for healthy soil',
+                action: 'Apply 5-8kg mature compost per tree every 3 months. Add 500g biochar per tree for water retention.',
+                priority: 'low',
+                timeframe: 'Monthly routine',
+                color: 'text-teal-700',
+                bgColor: 'bg-gradient-to-r from-teal-50 to-cyan-50',
+                borderColor: 'border-teal-300',
+                iconBg: 'bg-teal-100'
+            });
+        }
+
+        // Process dbSuggestions
+        const dbRecs = (dbSuggestions || []).map(s => {
+            const IconComponent = Icons[s.icon] || Icons.Lightbulb;
+            return {
+                id: s.id,
+                type: s.type || 'guidance',
+                icon: IconComponent,
+                title: s.title || 'Suggestion',
+                description: s.description || '',
+                action: s.action || '',
+                priority: s.priority || 'medium',
+                timeframe: s.timeframe || 'Anytime',
+                color: s.color || 'text-slate-700',
+                bgColor: s.bgColor || 'bg-gradient-to-r from-slate-50 to-gray-50',
+                borderColor: s.borderColor || 'border-slate-300',
+                iconBg: s.iconBg || 'bg-slate-100'
+            };
         });
 
-        return recommendations.sort((a, b) => {
+        // Merge and sort
+        const combined = [...dbRecs, ...recommendations];
+        return combined.sort((a, b) => {
             const priorityOrder = { high: 3, medium: 2, low: 1 };
-            return priorityOrder[b.priority] - priorityOrder[a.priority];
+            const prioA = priorityOrder[a.priority] || 1;
+            const prioB = priorityOrder[b.priority] || 1;
+            return prioB - prioA;
         });
-    }, [sensorData]);
+    }, [sensorData, dbSuggestions]);
 
     const getPriorityIcon = (priority) => {
         switch (priority) {
-            case 'high': return <AlertTriangle className="w-4 h-4 text-red-500" />;
-            case 'medium': return <Clock className="w-4 h-4 text-amber-500" />;
-            case 'low': return <CheckCircle className="w-4 h-4 text-green-500" />;
-            default: return <Lightbulb className="w-4 h-4 text-gray-500" />;
+            case 'high': return <Icons.AlertTriangle className="w-4 h-4 text-red-500" />;
+            case 'medium': return <Icons.Clock className="w-4 h-4 text-amber-500" />;
+            case 'low': return <Icons.CheckCircle className="w-4 h-4 text-green-500" />;
+            default: return <Icons.Lightbulb className="w-4 h-4 text-gray-500" />;
         }
     };
 
@@ -201,7 +214,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
     const statusTone = useMemo(() => {
         if (suggestions.length === 0) {
             return {
-                Icon: ShieldCheck,
+                Icon: Icons.ShieldCheck,
                 title: 'Healthy environment',
                 message: 'All readings are inside the target range. We will surface next steps if anything drifts.',
                 bg: 'bg-emerald-50',
@@ -211,7 +224,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
         }
         if (priorityCounts.high > 0) {
             return {
-                Icon: AlertTriangle,
+                Icon: Icons.AlertTriangle,
                 title: 'Action needed',
                 message: 'High-priority items detected. Address these first to keep plants stable.',
                 bg: 'bg-rose-50',
@@ -221,7 +234,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
         }
         if (priorityCounts.medium > 0) {
             return {
-                Icon: Clock,
+                Icon: Icons.Clock,
                 title: 'Upcoming tasks',
                 message: 'Medium-priority guidance available. Plan these into your next rounds.',
                 bg: 'bg-amber-50',
@@ -230,7 +243,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             };
         }
         return {
-            Icon: Lightbulb,
+            Icon: Icons.Lightbulb,
             title: 'Advisory only',
             message: 'Low-priority optimizations to keep conditions on track.',
             bg: 'bg-sky-50',
@@ -257,7 +270,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
             <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-                        <Activity className="w-5 h-5" />
+                        <Icons.Activity className="w-5 h-5" />
                     </div>
                     <div>
                         <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Condition overview</p>
@@ -308,7 +321,7 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
                             <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
                                 <Icon className="w-full h-full" />
                             </div>
-                            
+
                             <div className="relative z-10">
                                 <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
                                     <div className="flex items-start gap-3">
@@ -323,29 +336,28 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm ${
-                                            suggestion.priority === 'high' ? 'bg-gradient-to-r from-red-500 to-rose-500' :
-                                            suggestion.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 
-                                            'bg-gradient-to-r from-emerald-500 to-teal-500'
-                                        }`}>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm ${suggestion.priority === 'high' ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                                            suggestion.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-orange-500' :
+                                                'bg-gradient-to-r from-emerald-500 to-teal-500'
+                                            }`}>
                                             {suggestion.priority === 'high' ? 'High priority' :
-                                             suggestion.priority === 'medium' ? 'Medium priority' : 'Low priority'}
+                                                suggestion.priority === 'medium' ? 'Medium priority' : 'Low priority'}
                                         </span>
                                         <div className="flex items-center gap-1 text-xs text-gray-600 bg-white/70 px-2 py-1 rounded-full border border-white/60">
-                                            <Clock className="w-3 h-3" />
+                                            <Icons.Clock className="w-3 h-3" />
                                             <span>{suggestion.timeframe}</span>
                                         </div>
                                         {getPriorityIcon(suggestion.priority)}
                                     </div>
                                 </div>
-                                
+
                                 <p className="text-sm text-gray-700 mb-3 leading-relaxed">
                                     {suggestion.description}
                                 </p>
 
                                 <div className="bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-white/60 mb-3 shadow-sm">
                                     <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                                        <Lightbulb className="w-3 h-3" />
+                                        <Icons.Lightbulb className="w-3 h-3" />
                                         Recommended action
                                     </p>
                                     <p className="text-sm text-gray-700 leading-relaxed">
@@ -357,10 +369,10 @@ const FarmingSuggestions = ({ sensorData, loading }) => {
                     );
                 })}
             </div>
-            
+
             {suggestions.length === 0 && (
                 <div className="text-center py-8 text-gray-500 border border-dashed border-emerald-200 rounded-lg bg-emerald-50/70 mt-2">
-                    <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-400" />
+                    <Icons.CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-400" />
                     <p className="font-semibold text-emerald-800">All parameters are in optimal condition</p>
                     <p className="text-sm text-emerald-700 mt-1">We will surface targeted actions here when something needs attention.</p>
                 </div>

@@ -8,43 +8,7 @@ const Tasks = ({
   onTaskToggle,
   loading = false
 }) => {
-  // Default tasks if none provided
-  const defaultTasks = [
-    { 
-      id: 1, 
-      name: 'Watering', 
-      time: '08:00 AM', 
-      progress: 40, 
-      completed: false, 
-      description: 'Water plants with 1 inch of water in the morning' 
-    },
-    { 
-      id: 2, 
-      name: 'Fertilizing', 
-      time: '06:00 AM', 
-      progress: 100, 
-      completed: true, 
-      description: 'Apply organic fertilizer at base of plants. Quantity: 50g per plant' 
-    },
-    { 
-      id: 3, 
-      name: 'Pest Inspection', 
-      time: '11:00 AM', 
-      progress: 0, 
-      completed: false, 
-      description: 'Look for leaves for any signs of aphids or other pests' 
-    },
-    { 
-      id: 4, 
-      name: 'Soil Aeration', 
-      time: '02:00 PM', 
-      progress: 0, 
-      completed: false, 
-      description: 'Loosen soil around the plants stem without damaging roots' 
-    }
-  ];
-
-  const tasksToShow = tasks.length > 0 ? tasks : defaultTasks;
+  const tasksToShow = tasks;
   const completedTasks = tasksToShow.filter(task => task.completed).length;
   const totalTasks = tasksToShow.length;
 
@@ -75,7 +39,7 @@ const Tasks = ({
           {completedTasks}/{totalTasks} completed
         </span>
       </div>
-      
+
       <div className="space-y-4">
         {tasksToShow.map((task) => (
           <div key={task.id} className="border-b border-gray-100 last:border-b-0 pb-4 last:pb-0">
@@ -100,13 +64,12 @@ const Tasks = ({
               </div>
               <span className="text-sm text-gray-500">{task.progress}%</span>
             </div>
-            
+
             <div className="ml-8">
               <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    task.completed ? 'bg-green-500' : 'bg-blue-500'
-                  }`}
+                <div
+                  className={`h-2 rounded-full transition-all duration-300 ${task.completed ? 'bg-green-500' : 'bg-blue-500'
+                    }`}
                   style={{ width: `${task.progress}%` }}
                 />
               </div>
@@ -117,6 +80,12 @@ const Tasks = ({
           </div>
         ))}
       </div>
+
+      {tasksToShow.length === 0 && (
+        <div className="text-center py-8 text-gray-500 text-sm">
+          No tasks available for this site.
+        </div>
+      )}
     </div>
   );
 };

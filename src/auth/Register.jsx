@@ -82,11 +82,9 @@ const Register = () => {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <Link to="/" className="inline-flex items-center gap-3 group">
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                            <Leaf className="w-7 h-7 text-white" />
-                        </div>
+                        <img src="/assets/logo/LOGO.png" alt="Logo" className="w-12 h-12 object-contain group-hover:scale-105 transition-transform" />
                         <div className="text-left">
-                            <p className="text-xl font-bold text-slate-800">AIST Monitor</p>
+                            <p className="text-xl font-bold text-slate-800">Greenara</p>
                             <p className="text-xs text-slate-400 font-medium">Precision Agriculture Platform</p>
                         </div>
                     </Link>
