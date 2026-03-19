@@ -12,6 +12,8 @@ import {
     doc,
     getDoc,
     setDoc,
+    deleteDoc,
+    addDoc,
     serverTimestamp,
     collection,
     query,
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState(null);
     const [userDevices, setUserDevices] = useState([]);
+    const [userDevicesData, setUserDevicesData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -55,13 +58,16 @@ export const AuthProvider = ({ children }) => {
                     const userData = userDoc.exists() ? userDoc.data() : {};
                     setRole(userData.role || 'user');
 
-                    // Fetch associated devices
+                    // Fetch associated devices (full objects + ID list)
                     const devicesRef = collection(db, 'devices');
                     const q = query(devicesRef, where('assigned_to_uid', '==', firebaseUser.uid));
                     const devicesSnap = await Promise.race([getDocs(q), timeout]);
 
+                    const fullDevices = devicesSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+                    setUserDevicesData(fullDevices);
+
                     // Safely extract device IDs, remove falsy values, and strictly limit to 10 for Firestore 'in' queries
-                    let devices = devicesSnap.docs.map(d => d.data().device_id).filter(id => id);
+                    let devices = fullDevices.map(d => d.device_id).filter(id => id);
                     if (devices.length === 0) devices = ['UNASSIGNED_FALLBACK'];
                     if (devices.length > 10) devices = devices.slice(0, 10);
 
@@ -69,12 +75,14 @@ export const AuthProvider = ({ children }) => {
                 } catch {
                     setRole('user');
                     setUserDevices([]);
+                    setUserDevicesData([]);
                 }
                 setUser(firebaseUser);
             } else {
                 setUser(null);
                 setRole(null);
                 setUserDevices([]);
+                setUserDevicesData([]);
             }
             setLoading(false);
         });
@@ -125,8 +133,55 @@ export const AuthProvider = ({ children }) => {
         await signOut(auth);
     };
 
+    // ─── Device Mutation Helpers ───────────────────────────────────────────────
+    const refreshDevices = async (uid) => {
+        try {
+            const devicesRef = collection(db, 'devices');
+            const q = query(devicesRef, where('assigned_to_uid', '==', uid));
+            const devicesSnap = await getDocs(q);
+            const fullDevices = devicesSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+            setUserDevicesData(fullDevices);
+            let ids = fullDevices.map(d => d.device_id).filter(Boolean);
+            if (ids.length === 0) ids = ['UNASSIGNED_FALLBACK'];
+            if (ids.length > 10) ids = ids.slice(0, 10);
+            setUserDevices(ids);
+            return fullDevices;
+        } catch (err) {
+            console.error('Error refreshing devices:', err);
+            return userDevicesData;
+        }
+    };
+
+    const addDevice = async (deviceData) => {
+        if (!user) throw new Error('Must be logged in to add a device');
+        const payload = {
+            device_id: deviceData.device_id,
+            name: deviceData.name || `Device ${deviceData.device_id}`,
+            orchard: deviceData.orchard || '',
+            status: 'active',
+            assigned_to_uid: user.uid,
+            assigned_to_email: user.email,
+            registered_at: serverTimestamp(),
+            last_seen: null,
+        };
+        const docRef = await addDoc(collection(db, 'devices'), payload);
+        await refreshDevices(user.uid);
+        return { docId: docRef.id, ...payload };
+    };
+
+    const removeDevice = async (docId) => {
+        if (!user) throw new Error('Must be logged in to remove a device');
+        await deleteDoc(doc(db, 'devices', docId));
+        await refreshDevices(user.uid);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, role, userDevices, loading, login, register, logout, db, auth }}>
+        <AuthContext.Provider value={{
+            user, role, userDevices, userDevicesData, loading,
+            login, register, logout,
+            addDevice, removeDevice, refreshDevices,
+            db, auth
+        }}>
             {children}
         </AuthContext.Provider>
     );

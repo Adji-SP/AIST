@@ -155,7 +155,7 @@ const Landing = () => {
                 <div className="max-w-[1440px] mx-auto flex justify-between items-center">
                     <Link to="/" className="flex items-center gap-2 group">
                         <img
-                            src={scrolled ? "/assets/logo/LOGO.png" : "/assets/logo/WHITE.png"}
+                            src={scrolled ? "/assets/logo/BLACK.png" : "/assets/logo/WHITE.png"}
                             alt="Logo"
                             className="w-10 h-10 object-contain transition-all"
                         />

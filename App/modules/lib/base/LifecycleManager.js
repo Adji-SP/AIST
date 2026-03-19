@@ -7,12 +7,6 @@
  * Lifecycle phases:
  * 1. constructed -> initializing -> initialized -> ready
  * 2. ready -> shutting_down -> shutdown
- *
- * Benefits:
- * - Consistent lifecycle across all modules
- * - Easy to track module state
- * - Graceful shutdown support
- * - Health monitoring built-in
  */
 
 const { getInstance: getEventBus } = require('../events/EventBus');

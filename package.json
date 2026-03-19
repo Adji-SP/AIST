@@ -14,7 +14,7 @@
     "serve:web": "npm run build && concurrently \"npm run start\" \"npx serve -s frontend/build -l 3000\"",
     "serve:electron": "npm run build:electron && electron .",
     "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "craco build && shx rm -rf frontend/build && shx mv build frontend/",
+    "build:frontend": "npx craco build && npx shx rm -rf frontend/build && npx shx mv build frontend/",
     "build:backend": "echo 'Backend build complete'",
     "build:web": "npm run build:frontend",
     "build:electron": "npm run build && electron-builder",

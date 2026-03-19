@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import {
   AlertTriangle, Wifi, WifiOff, RefreshCw, ServerCrash
 } from 'lucide-react';
+import _ from 'lodash';
 
 // Layout and UI components
 import Header from '../layout/header';
@@ -14,6 +15,7 @@ import DeviceStatus from '../ui/DeviceStatus';
 import Tasks from '../ui/Tasks';
 import FarmingSuggestions from '../ui/FarmingSuggestions';
 import LandPlotsMap from '../ui/LandPlotMaps';
+import DeviceSelector from '../ui/DeviceSelector';
 import defaultImage from '../images/limaunipis.png';
 
 // Shared weather components
@@ -45,10 +47,19 @@ const Overview = () => {
   const isConnected = !loading && !error;
 
   // --- Context ---
-  const { userDevices, role } = useAuth();
+  const { userDevices, userDevicesData, role } = useAuth();
+
+  // --- Device Selection (for regular users) ---
+  const [selectedDeviceId, setSelectedDeviceId] = useState(null);
 
   // Safe array for Firestore 'in' query (cannot be empty)
-  const safeDeviceIds = userDevices?.length > 0 ? userDevices : ['UNASSIGNED_FALLBACK'];
+  const safeDeviceIds = useMemo(() => {
+    // If a specific device is selected, filter to just that device
+    if (selectedDeviceId && selectedDeviceId !== 'all' && role !== 'admin') {
+      return [selectedDeviceId];
+    }
+    return userDevices?.length > 0 ? userDevices : ['UNASSIGNED_FALLBACK'];
+  }, [userDevices, selectedDeviceId, role]);
 
   // --- Firestore Real-time Data ---
   // We omit `orderBy` to avoid requiring a composite index, returning an unsorted limit,
@@ -95,27 +106,19 @@ const Overview = () => {
 
   // --- Derived Data (Locally Sorted) ---
   const sensorData = useMemo(() => {
-    if (!sensorsData.data?.length) return [];
-    return [...sensorsData.data]
-      .sort((a, b) => getTs(b.timestamp) - getTs(a.timestamp))
-      .slice(0, 30);
+    return _.orderBy(sensorsData.data || [], [d => getTs(d.timestamp)], ['desc']).slice(0, 30);
   }, [sensorsData.data]);
 
   const alertsData = useMemo(() => {
-    const arr = alertsDataRaw.data || [];
-    return [...arr].sort((a, b) => getTs(b.timestamp) - getTs(a.timestamp)).slice(0, 10);
+    return _.orderBy(alertsDataRaw.data || [], [a => getTs(a.timestamp)], ['desc']).slice(0, 10);
   }, [alertsDataRaw.data]);
 
   const datasetParams = useMemo(() => {
-    if (!datasetParamData.data?.length) return [];
-    return [...datasetParamData.data]
-      .sort((a, b) => getTs(b.timestamp) - getTs(a.timestamp))
-      .slice(0, 20);
+    return _.orderBy(datasetParamData.data || [], [d => getTs(d.timestamp)], ['desc']).slice(0, 20);
   }, [datasetParamData.data]);
 
   const tasksList = useMemo(() => {
-    const arr = tasksDataRaw.data || [];
-    return [...arr].sort((a, b) => getTs(a.date) - getTs(b.date)).map(t => ({
+    return _.orderBy(tasksDataRaw.data || [], [t => getTs(t.date)], ['asc']).map(t => ({
       id: t.id,
       name: t.name || t.title || 'Unknown Task',
       time: t.time || (t.date ? new Date(getTs(t.date)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Anytime'),
@@ -126,8 +129,7 @@ const Overview = () => {
   }, [tasksDataRaw.data]);
 
   const dbSuggestions = useMemo(() => {
-    const arr = suggestionsDataRaw.data || [];
-    return [...arr].sort((a, b) => getTs(b.created_at || b.timestamp) - getTs(a.created_at || a.timestamp));
+    return _.orderBy(suggestionsDataRaw.data || [], [s => getTs(s.created_at || s.timestamp)], ['desc']);
   }, [suggestionsDataRaw.data]);
 
   const handleTaskToggle = async (taskId, completed) => {
@@ -237,7 +239,7 @@ const Overview = () => {
       return acc;
     }, {});
 
-    const labels = Object.keys(groupedData).sort((a, b) => new Date(a) - new Date(b));
+    const labels = _.sortBy(Object.keys(groupedData), date => new Date(date));
     const createDataset = (key, label, color) => ({
       label,
       data: labels.map(date => {
@@ -285,16 +287,23 @@ const Overview = () => {
         {/* Status Bar */}
         <div className="bg-white border-b px-4 py-2 flex justify-between items-center text-sm sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            {/* Site Switcher */}
-            <select
-              value={siteId}
-              onChange={(e) => setSiteId(e.target.value)}
-              className="px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border border-emerald-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            >
-              {siteOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+            {/* Device / Site Switcher */}
+            {role === 'admin' ? (
+              <select
+                value={siteId}
+                onChange={(e) => setSiteId(e.target.value)}
+                className="px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border border-emerald-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              >
+                {siteOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            ) : (
+              <DeviceSelector
+                selectedDeviceId={selectedDeviceId}
+                onDeviceChange={(id) => setSelectedDeviceId(id)}
+              />
+            )}
 
             {/* Connection Status */}
             <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${connectionStatus.color}`}>

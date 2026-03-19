@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Leaf, X, Home, History, Wrench, Users,
-  LogOut, ChevronsLeft, ChevronsRight, Shield, PenLine, Settings
+  LogOut, ChevronsLeft, ChevronsRight, Shield, PenLine, Settings, Cpu
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { path: '/overview', icon: Home, label: 'Overview' },
   { path: '/data', icon: History, label: 'Data Analytics' },
   { path: '/maintenance', icon: Wrench, label: 'Task Schedule' },
+  { path: '/devices', icon: Cpu, label: 'My Devices' },
 ];
 
 const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {

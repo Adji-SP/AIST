@@ -22,6 +22,7 @@ import LandingEditor from './components/dashboard/LandingEditor';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import DeviceRegistry from './pages/admin/DeviceRegistry';
+import DeviceManagement from './pages/DeviceManagement';
 
 // ── Error Boundary ────────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -96,6 +97,7 @@ function App() {
               <Route path="/finance-analytics" element={<ProtectedRoute><FinanceAnalytics /></ProtectedRoute>} />
               <Route path="/articles" element={<ProtectedRoute><Articles /></ProtectedRoute>} />
               <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
+              <Route path="/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
               <Route path="/team-profile" element={<ProtectedRoute><TeamProfile /></ProtectedRoute>} />
               <Route path="/landing-editor" element={<AdminRoute><LandingEditor /></AdminRoute>} />
 
