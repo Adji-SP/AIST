@@ -14,7 +14,7 @@
     "serve:web": "npm run build && concurrently \"npm run start\" \"npx serve -s frontend/build -l 3000\"",
     "serve:electron": "npm run build:electron && electron .",
     "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "cross-env NODE_ENV=production BUILD_PATH=frontend/build node ./node_modules/@craco/craco/dist/bin/craco.js build",
+    "build:frontend": "node ./node_modules/@craco/craco/dist/bin/craco.js build && node ./node_modules/shx/lib/cli.js rm -rf frontend/build && node ./node_modules/shx/lib/cli.js mv build frontend/",
     "build:backend": "echo 'Backend build complete'",
     "build:web": "npm run build:frontend",
     "build:electron": "npm run build && electron-builder",
