@@ -18,10 +18,10 @@ module.exports = function registerRoutes(app, db) {
     // Define Routes
     app.post('/api/auth/register', authController.register);
     app.post('/api/auth/login', authController.login);
-    
+
     app.get('/api/maui/data', mauiController.getData);
-    
+
     app.post('/api/sensor/data', databaseController.insertSensorData);
-    
+
     console.log('✅ App Routes Registered');
 };
