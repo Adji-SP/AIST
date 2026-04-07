@@ -167,6 +167,7 @@ const Landing = () => {
                         <a href="#" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'bg-white shadow-sm' : 'bg-white text-[#1D1C1A]'}`}>Home</a>
                         <a href="#features" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'hover:bg-white' : 'hover:bg-white/20'}`}>Features</a>
                         <a href="#how-it-works" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'hover:bg-white' : 'hover:bg-white/20'}`}>How it works</a>
+                        <a href="#catalog" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'hover:bg-white' : 'hover:bg-white/20'}`}>Katalog</a>
                         <a href="#solutions" className={`px-5 py-2 rounded-full transition-colors ${scrolled ? 'hover:bg-white' : 'hover:bg-white/20'}`}>Solutions</a>
                     </div>
 
@@ -405,8 +406,196 @@ const Landing = () => {
                 </div>
             </section> */}
 
+
+            {/* --- 8.5 Product Catalog Section (Printable) --- */}
+            <section id="catalog" className="py-24 bg-[#0D0D0D] text-white relative overflow-hidden">
+                {/* Background glow blobs */}
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#3FAE49]/10 rounded-full blur-[150px] pointer-events-none" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] bg-[#D4F542]/10 rounded-full blur-[150px] pointer-events-none" />
+
+                <div className="max-w-[1440px] mx-auto px-6 lg:px-20 relative z-10">
+                    {/* Header */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+                        <div>
+                            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 text-[#D4F542] text-xs font-bold mb-4 uppercase tracking-widest border border-white/10">
+                                Katalog Produk
+                            </div>
+                            <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
+                                Perangkat <span className="text-[#3FAE49]">AgroNara</span><br />
+                                Siap Digunakan.
+                            </h2>
+                            <p className="mt-4 text-white/50 text-lg max-w-xl">
+                                Ekosistem IoT pertanian presisi — dari sensor lapangan hingga gateway cloud — dalam satu paket terintegrasi.
+                            </p>
+                        </div>
+                        <button
+                            id="btn-print-catalog"
+                            onClick={() => window.print()}
+                            className="flex-shrink-0 flex items-center gap-3 px-7 py-3.5 rounded-full bg-[#D4F542] text-[#1D1C1A] font-bold text-sm hover:bg-[#c2e23b] transition-colors shadow-lg shadow-[#D4F542]/20 print:hidden"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+                            Cetak Katalog
+                        </button>
+                    </div>
+
+                    {/* Product Cards */}
+                    <div className="grid lg:grid-cols-2 gap-8 catalog-print-area">
+
+                        {/* Card 1 — AgroHigh */}
+                        <div id="catalog-card-1" className="bg-[#161616] border border-white/10 rounded-[32px] p-8 flex flex-col gap-8 hover:border-[#3FAE49]/40 transition-colors">
+                            {/* Device image */}
+                            <div className="catalog-img-bg bg-[#0D0D0D] rounded-[20px] flex items-center justify-center h-56 overflow-hidden">
+                                <img
+                                    src="/assets/landing/device-agrohigh.png"
+                                    alt="AgroHigh Device"
+                                    className="h-full object-contain drop-shadow-2xl"
+                                />
+                            </div>
+                            {/* Info */}
+                            <div className="flex flex-col flex-1">
+                                <div className="inline-flex items-center gap-2 mb-3">
+                                    <span className="text-xs font-black uppercase tracking-widest text-[#3FAE49] bg-[#3FAE49]/10 px-3 py-1 rounded-full border border-[#3FAE49]/30">Standalone</span>
+                                    <span className="text-xs font-semibold text-white/30">SKU: AGH-001</span>
+                                </div>
+                                <h3 className="text-2xl font-extrabold mb-1">AgroHigh</h3>
+                                <p className="catalog-muted text-white/40 text-sm mb-6 leading-relaxed">
+                                    Sensor tanah 7-in-1 mandiri dengan layar TFT, koneksi WiFi langsung ke cloud, dan penyimpanan data offline otomatis. Cocok untuk lahan kecil hingga menengah.
+                                </p>
+                                <ul className="space-y-2.5 mb-8">
+                                    {[
+                                        'Sensor N, P, K, Suhu, Kelembapan, pH, EC',
+                                        'Layar TFT 2.4" real-time',
+                                        'WiFi + Offline EEPROM Buffer (30 entri)',
+                                        'HTTP POST ke cloud API',
+                                        'Catu daya DC 5V',
+                                    ].map((f, i) => (
+                                        <li key={i} className="flex items-start gap-3 text-sm text-white/70">
+                                            <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#3FAE49]/15 border border-[#3FAE49]/30 flex items-center justify-center">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3FAE49" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                            </span>
+                                            {f}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <div className="border-t border-white/10 pt-6 flex items-center justify-between mt-auto">
+                                    <div>
+                                        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider mb-1">Harga Unit</div>
+                                        <div className="text-3xl font-black text-white">Rp 4.200.000</div>
+                                    </div>
+                                    <a href="#team" className="catalog-cta-btn px-6 py-3 rounded-full bg-[#3FAE49] text-white font-bold text-sm hover:bg-[#359740] transition-colors print:hidden">
+                                        Pesan Sekarang
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card 2 — AgroNara */}
+                        <div id="catalog-card-2" className="bg-[#161616] border border-white/10 rounded-[32px] p-8 flex flex-col gap-8 hover:border-[#D4F542]/40 transition-colors">
+                            {/* Device image */}
+                            <div className="catalog-img-bg bg-[#0D0D0D] rounded-[20px] flex items-center justify-center h-56 overflow-hidden">
+                                <img
+                                    src="/assets/landing/device-agronara.jpg"
+                                    alt="AgroNara System"
+                                    className="h-full object-contain drop-shadow-2xl"
+                                />
+                            </div>
+                            {/* Info */}
+                            <div className="flex flex-col flex-1">
+                                <div className="inline-flex items-center gap-2 mb-3">
+                                    <span className="text-xs font-black uppercase tracking-widest text-[#D4F542] bg-[#D4F542]/10 px-3 py-1 rounded-full border border-[#D4F542]/30">Sentinel</span>
+                                    <span className="text-xs font-semibold text-white/30">SKU: AGN-002</span>
+                                </div>
+                                <h3 className="text-2xl font-extrabold mb-1">AgroNara</h3>
+                                <p className="catalog-muted text-white/40 text-sm mb-6 leading-relaxed">
+                                    Sistem multi-titik LoRa dengan satu master gateway dan hingga 10 slave sensor. Ideal untuk lahan luas, kebun, atau perkebunan yang membutuhkan jangkauan hingga 1 km.
+                                </p>
+                                <ul className="space-y-2.5 mb-8">
+                                    {[
+                                        '1× Sentinel Gateway (ESP32 + WiFi + WebSocket)',
+                                        'Hingga 10× Slave Node (LoRa 433 MHz)',
+                                        'Jangkauan komunikasi hingga 1 km (LoS)',
+                                        'Sensor N, P, K, Suhu, Kelembapan, pH, EC per node',
+                                        'Buffer EEPROM offline per slave node',
+                                    ].map((f, i) => (
+                                        <li key={i} className="flex items-start gap-3 text-sm text-white/70">
+                                            <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#D4F542]/15 border border-[#D4F542]/30 flex items-center justify-center">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#D4F542" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                            </span>
+                                            {f}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <div className="border-t border-white/10 pt-6 flex items-center justify-between mt-auto">
+                                    <div>
+                                        <div className="text-xs text-white/30 font-semibold uppercase tracking-wider mb-1">Harga Paket (1+3 node)</div>
+                                        <div className="text-3xl font-black text-white">Rp 7.430.000</div>
+                                    </div>
+                                    <a href="#team" className="catalog-cta-btn px-6 py-3 rounded-full bg-[#D4F542] text-[#1D1C1A] font-bold text-sm hover:bg-[#c2e23b] transition-colors print:hidden">
+                                        Pesan Sekarang
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bundle Banner */}
+                    <div id="catalog-bundle" className="mt-8 bg-gradient-to-r from-[#1a2e1a] to-[#0D1F0D] border border-[#3FAE49]/30 rounded-[24px] p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <div className="text-xs font-black uppercase tracking-widest text-[#D4F542] mb-2">Paket Bundling — Hemat 12%</div>
+                            <h4 className="text-2xl font-extrabold">AgroHigh + AgroNara Lengkap</h4>
+                            <p className="text-white/50 mt-1 text-sm">Paket unit lengkap: sensor standalone, gateway master, 3 slave node, dan kit instalasi.</p>
+                        </div>
+                        <div className="flex items-center gap-6 flex-shrink-0">
+                            <div className="text-right">
+                                <div className="text-xs text-white/30 line-through mb-0.5">Rp 13.230.000</div>
+                                <div className="text-4xl font-black text-[#D4F542]">Rp 11.630.000</div>
+                            </div>
+                            <a href="#team" className="px-8 py-4 rounded-full bg-[#D4F542] text-[#1D1C1A] font-black text-sm hover:bg-[#c2e23b] transition-colors shadow-lg shadow-[#D4F542]/10 print:hidden whitespace-nowrap">
+                                Pesan Sekarang
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Print-only stylesheet — injected cleanly into <head> via useEffect */}
+            <style id="catalog-print-style">{`
+                @media print {
+                    /* Hide everything */
+                    body > div > nav,
+                    body > div > section:not(#catalog),
+                    body > div > footer {
+                        display: none !important;
+                    }
+                    /* Show catalog full-width */
+                    #catalog {
+                        display: block !important;
+                        background: #ffffff !important;
+                        color: #111111 !important;
+                        padding: 24px !important;
+                    }
+                    /* Print button hidden */
+                    #btn-print-catalog { display: none !important; }
+                    /* Card backgrounds */
+                    #catalog-card-1, #catalog-card-2 {
+                        background: #f5f5f5 !important;
+                        border: 1px solid #ddd !important;
+                        color: #111 !important;
+                    }
+                    /* Muted text */
+                    .catalog-muted { color: #555 !important; }
+                    /* Image area */
+                    .catalog-img-bg { background: #eeeeee !important; }
+                    /* Bundle bar */
+                    #catalog-bundle { background: #e8f5e8 !important; border: 1px solid #3FAE49 !important; }
+                    /* Buttons hidden */
+                    .catalog-cta-btn { display: none !important; }
+                }
+            `}</style>
+
             {/* --- 4.5 Team (Merged dynamically inside redesign) --- */}
             <section id="team" className="py-24 bg-white border-y border-gray-100">
+
                 <div className="max-w-[1440px] mx-auto px-6 lg:px-20 text-center">
                     <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#E5F5EC] text-[#3FAE49] text-xs font-bold mb-6 uppercase tracking-wider">Credits</div>
                     <h2 className="text-4xl lg:text-5xl font-extrabold text-[#1D1C1A] tracking-tight mb-16">The Minds Behind Greenara</h2>
